@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <interpret.hpp>
+#include <emul.hpp>
 
 int main()
 {
@@ -9,5 +9,5 @@ int main()
 	Emul i(&cpu);
 
 	while (true)
-		i.interpret();
+		i.emulate();
 }

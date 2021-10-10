@@ -37,5 +37,5 @@ class Emul {
 public:
 	Emul(CPU *cpu) : cpu(cpu) {}
 
-	void interpret();
+	void emulate();
 };

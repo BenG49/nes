@@ -1,4 +1,4 @@
-#include <interpret.hpp>
+#include <emul.hpp>
 
 #define IMM(opcode, func) \
 	case opcode:          \
@@ -55,13 +55,13 @@
 		break;
 
 #define MAIN_ADDR_MODES(imm, zpg, zpgx, abss, absx, absy, indx, indy, func) \
-	IMM(imm, func)                                                         \
-	ZPG(zpg, func)                                                         \
-	ZPGX(zpgx, func)                                                       \
-	ABSS(abss, func)                                                       \
-	ABSX(absx, func)                                                       \
-	ABSY(absy, func)                                                       \
-	INDX(indx, func)                                                       \
+	IMM(imm, func)                                                          \
+	ZPG(zpg, func)                                                          \
+	ZPGX(zpgx, func)                                                        \
+	ABSS(abss, func)                                                        \
+	ABSX(absx, func)                                                        \
+	ABSY(absy, func)                                                        \
+	INDX(indx, func)                                                        \
 	INDY(indy, func)
 
 #define BR(opcode, flag)         \
@@ -72,6 +72,8 @@
 
 #define TR(opcode, to, from) \
 	case opcode: cpu->set_flags(to = from, Flags(true, true, false)); break;
+
+#define SET_IMM(opcode, func)
 
 // ---------- //
 
@@ -95,159 +97,7 @@ void Emul::reljmp(uint8_t jmp)
 
 // ---------- //
 
-void Emul::add(cpu_t n)
-{
-	uint16_t out = (uint16_t)cpu->a + (uint16_t)n + cpu->f.carry;
-
-	cpu->f.ov = GET_BIT((cpu->a ^ out) & (n ^ out), 7);
-	cpu->set_flags(out, Flags(true, true, true));
-
-	cpu->a = out;
-}
-
-void Emul::and_f(cpu_t n)
-{
-	cpu->a = cpu->a & n;
-
-	cpu->set_flags(cpu->a, Flags(true, true, false));
-}
-
-cpu_t Emul::asl(cpu_t n)
-{
-	uint16_t out = ((uint16_t)n) << 1;
-
-	cpu->set_flags(out, Flags(true, true, true));
-
-	return out;
-}
-
-void Emul::bit(cpu_t n)
-{
-	// lol i have no idea why this is useful
-	cpu->f.neg = GET_BIT(n, 7);
-	cpu->f.ov  = GET_BIT(n, 6);
-
-	cpu->f.zero = !(n & cpu->a);
-}
-
-void Emul::cmp(cpu_t n)
-{
-	uint16_t out = (uint16_t)cpu->a - (uint16_t)n;
-
-	cpu->set_flags(out, Flags(true, true, true));
-}
-
-void Emul::cpx(cpu_t n)
-{
-	uint16_t out = (uint16_t)cpu->x - (uint16_t)n;
-
-	cpu->set_flags(out, Flags(true, true, true));
-}
-
-void Emul::cpy(cpu_t n)
-{
-	uint16_t out = (uint16_t)cpu->y - (uint16_t)n;
-
-	cpu->set_flags(out, Flags(true, true, true));
-}
-
-void Emul::eor(cpu_t n)
-{
-	cpu->a = cpu->a ^ n;
-
-	cpu->set_flags(cpu->a, Flags(true, true, false));
-}
-
-void Emul::lda(cpu_t n)
-{
-	cpu->set_flags(cpu->a = n, Flags(true, true, false));
-}
-
-void Emul::ldx(cpu_t n)
-{
-	cpu->set_flags(cpu->x = n, Flags(true, true, false));
-}
-
-void Emul::ldy(cpu_t n)
-{
-	cpu->set_flags(cpu->y = n, Flags(true, true, false));
-}
-
-void Emul::ora(cpu_t n)
-{
-	cpu->a = cpu->a | n;
-
-	cpu->set_flags(cpu->a, Flags(true, true, false));
-}
-
-void Emul::sbc(cpu_t n)
-{
-	uint16_t out = (uint16_t)cpu->a - (uint16_t)n - cpu->f.carry;
-
-	cpu->f.ov = GET_BIT((cpu->a ^ out) & ((255 - n) ^ out), 7);
-	cpu->set_flags(out, Flags(true, true, true));
-
-	cpu->a = out;
-}
-
-cpu_t Emul::rol(cpu_t n)
-{
-	uint16_t out = ((uint16_t)n) << 1;
-
-	out |= cpu->f.carry;
-	cpu->set_flags(out, Flags(true, true, true));
-
-	return out;
-}
-
-cpu_t Emul::ror(cpu_t n)
-{
-	uint16_t out = ((uint16_t)n) >> 1;
-
-	out |= (cpu->f.carry << 7);
-	cpu->f.carry = n & 1;
-	cpu->set_flags(out, Flags(true, true, false));
-
-	return out;
-}
-
-void Emul::sta(addr_t n)
-{
-	cpu->mem[n] = cpu->a;
-}
-
-void Emul::stx(addr_t n)
-{
-	printf("stx %d\n", n);
-	cpu->mem[n] = cpu->x;
-}
-
-void Emul::sty(addr_t n)
-{
-	cpu->mem[n] = cpu->y;
-}
-
-void Emul::push(cpu_t n)
-{
-	cpu->mem[cpu->sp--] = n;
-}
-
-cpu_t Emul::pop()
-{
-	return cpu->mem[++cpu->sp];
-}
-
-addr_t Emul::pop_word()
-{
-	uint16_t out = 0;
-	out |= cpu->mem[++cpu->sp];
-	out |= (cpu->mem[++cpu->sp] << 8);
-	return out;
-}
-
-// ---------- //
-
-void Emul::interpret()
+void Emul::emulate()
 {
 	uint8_t *op = &cpu->mem[cpu->ip++];
 
@@ -504,26 +354,30 @@ void Emul::interpret()
 		// TYA
 		TR(0x98, cpu->a, cpu->y)
 
-		// ADC all addr modes
+		// ADC
 		MAIN_ADDR_MODES(0x69, 0x65, 0x75, 0x6d, 0x7d, 0x79, 0x61, 0x71, add)
 
-		// AND all addr modes
+		// AND
 		MAIN_ADDR_MODES(0x29, 0x25, 0x35, 0x2d, 0x3d, 0x39, 0x21, 0x31, and_f)
 
-		// CMP all addr modes
+		// CMP
 		MAIN_ADDR_MODES(0xc9, 0xc5, 0xd5, 0xcd, 0xdd, 0xd9, 0xc1, 0xd1, cmp);
 
-		// EOR all addr modes
+		// EOR
 		MAIN_ADDR_MODES(0x49, 0x45, 0x55, 0x4d, 0x5d, 0x59, 0x41, 0x51, eor)
 
-		// LDA all addr modes
+		// LDA
 		MAIN_ADDR_MODES(0xa9, 0xa5, 0xb5, 0xad, 0xbd, 0xb9, 0xa1, 0xb1, lda)
 
-		// ORA all addr modes
+		// ORA
 		MAIN_ADDR_MODES(0x09, 0x05, 0x15, 0x0d, 0x1d, 0x19, 0x01, 0x11, ora)
 
-		// SBC all addr modes
+		// SBC
 		MAIN_ADDR_MODES(0xe9, 0xe5, 0xf5, 0xed, 0xfd, 0xf9, 0xe1, 0xf1, sbc)
+	
+		case 0xff:
+			puts("Program halted");
+			exit(0);
 
 		default:
 			printf("Unimplemented opcode %#04x\n", *op);
