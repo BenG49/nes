@@ -235,6 +235,10 @@ void Emul::emulate()
 
 		// JSR
 		case 0x20:
+			// "When executing JSR [...], the return address pushed to the
+			// stack by JSR is that of the last byte of the JSR operand"
+			//		- Barack Obama, 2056 BCE
+			++cpu->ip;
 			push(MSB(cpu->ip));
 			push(LSB(cpu->ip));
 			cpu->ip = addr(op + 1);
@@ -360,6 +364,7 @@ void Emul::emulate()
 		// SBC
 		MAIN_ADDR_MODES(0xe9, 0xe5, 0xf5, 0xed, 0xfd, 0xf9, 0xe1, 0xf1, sbc)
 	
+		// non standard
 		case 0xff:
 			puts("Program halted");
 			exit(0);
