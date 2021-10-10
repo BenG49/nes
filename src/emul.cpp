@@ -10,12 +10,24 @@
 	case opcode:               \
 		func(cpu->mem[op[1]]); \
 		++cpu->ip;             \
-		break;                 \
+		break;
+
+#define ZPG_SET(opcode, func)                    \
+	case opcode:                                 \
+		cpu->mem[op[1]] = func(cpu->mem[op[1]]); \
+		++cpu->ip;                               \
+		break;
 
 #define ZPGX(opcode, func)              \
 	case opcode:                        \
 		func(cpu->mem[op[1] + cpu->x]); \
 		++cpu->ip;                      \
+		break;
+
+#define ZPGX_SET(opcode, func)                                     \
+	case opcode:                                                   \
+		cpu->mem[op[1] + cpu->x] = func(cpu->mem[op[1] + cpu->x]); \
+		++cpu->ip;                                                 \
 		break;
 
 #define ZPGY(opcode, func)              \
@@ -30,10 +42,22 @@
 		cpu->ip += 2;                 \
 		break;
 
+#define ABS_SET(opcode, func)                                  \
+	case opcode:                                               \
+		cpu->mem[addr(op + 1)] = func(cpu->mem[addr(op + 1)]); \
+		cpu->ip += 2;                                          \
+		break;
+
 #define ABSX(opcode, func)                     \
 	case opcode:                               \
 		func(cpu->mem[addr(op + 1) + cpu->x]); \
 		cpu->ip += 2;                          \
+		break;
+
+#define ABSX_SET(opcode, func)                                                   \
+	case opcode:                                                                 \
+		cpu->mem[addr(op + 1) + cpu->x] = func(cpu->mem[addr(op + 1) + cpu->x]); \
+		cpu->ip += 2;                                                            \
 		break;
 
 #define ABSY(opcode, func)                     \
@@ -107,35 +131,12 @@ void Emul::emulate()
 		// NOP
 		case 0xea: break;
 
-		// ASL a
-		case 0x0a:
-			cpu->a = asl(cpu->a);
-			++cpu->ip;
-			break;
-
-		// ASL zeropage
-		case 0x06:
-			cpu->mem[op[1]] = asl(cpu->mem[op[1]]);
-			++cpu->ip;
-			break;
-
-		// ASL zeropage, x
-		case 0x16:
-			cpu->mem[op[1] + cpu->x] = asl(cpu->mem[op[1] + cpu->x]);
-			++cpu->ip;
-			break;
-
-		// ASL absolute
-		case 0x0e:
-			cpu->mem[addr(op + 1)] = asl(cpu->mem[addr(op + 1)]);
-			cpu->ip += 2;
-			break;
-
-		// ASL absolute, x
-		case 0x1e:
-			cpu->mem[addr(op + 1) + cpu->x] = asl(cpu->mem[addr(op + 1) + cpu->x]);
-			cpu->ip += 2;
-			break;
+		// ASL
+		case 0x0a: cpu->a = asl(cpu->a); break;
+		ZPG_SET(0x06, asl)
+		ZPGX_SET(0x16, asl)
+		ABS_SET(0x0e, asl)
+		ABSX_SET(0x1e, asl)
 		
 		// BCC
 		BR(0x90, !cpu->f.carry);
@@ -267,36 +268,20 @@ void Emul::emulate()
 			cpu->f.set(pop());
 			cpu->set_flags(cpu->f.reg(), Flags(true, true, false));
 			break;
-		
-		// ROL a
+
+		// ROL
 		case 0x2a: cpu->a = rol(cpu->a); break;
-		
-		// ROL zeropage
-		case 0x26: cpu->mem[op[1]] = rol(cpu->mem[op[1]]); break;
-		
-		// ROL zeropage, x
-		case 0x36: cpu->mem[op[1] + cpu->x] = rol(cpu->mem[op[1] + cpu->x]); break;
-		
-		// ROL abs
-		case 0x2e: cpu->mem[addr(op + 1)] = rol(cpu->mem[addr(op + 1)]); break;
-		
-		// ROL abs, x
-		case 0x3e: cpu->mem[addr(op + 1) + cpu->x] = rol(cpu->mem[addr(op + 1) + cpu->x]); break;
-		
-		// ROR a
+		ZPG_SET(0x26, rol)
+		ZPGX_SET(0x36, rol)
+		ABS_SET(0x2e, rol)
+		ABSX_SET(0x3e, rol)
+
+		// ROR
 		case 0x6a: cpu->a = ror(cpu->a); break;
-		
-		// ROR zeropage
-		case 0x66: cpu->mem[op[1]] = ror(cpu->mem[op[1]]); break;
-		
-		// ROR zeropage, x
-		case 0x76: cpu->mem[op[1] + cpu->x] = ror(cpu->mem[op[1] + cpu->x]); break;
-		
-		// ROR abs
-		case 0x6e: cpu->mem[addr(op + 1)] = ror(cpu->mem[addr(op + 1)]); break;
-		
-		// ROR abs, x
-		case 0x7e: cpu->mem[addr(op + 1) + cpu->x] = ror(cpu->mem[addr(op + 1) + cpu->x]); break;
+		ZPG_SET(0x66, rol)
+		ZPGX_SET(0x76, rol)
+		ABS_SET(0x6e, rol)
+		ABSX_SET(0x7e, rol)
 
 		// RTI
 		case 0x40:
@@ -324,7 +309,7 @@ void Emul::emulate()
 		case 0x8d: cpu->mem[addr(op + 1)] = cpu->a; break;
 		case 0x9d: cpu->mem[addr(op + 1) + cpu->x] = cpu->a; break;
 		case 0x81: cpu->mem[get(addr(op + 1) + cpu->x)] = cpu->a; break;
-		case 0x91: cpu->mem[cpu->mem[op[1]] + cpu->y] = cpu->a; break;
+		case 0x91: cpu->mem[cpu->mem[op[1]] + cpu->y] 	= cpu->a; break;
 
 		// STX
 		case 0x86: cpu->mem[op[1]] = cpu->x; break;
