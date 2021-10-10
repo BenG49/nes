@@ -1,0 +1,6 @@
+- https://en.wikipedia.org/wiki/MOS_Technology_6502#Instruction_table
+- http://www.emulator101.com/6502-addressing-modes.html
+- http://www.emulator101.com/reference/6502-reference.html
+- http://www.6502.org/tutorials/6502opcodes.html
+- https://www.masswerk.at/6502/6502_instruction_set.html
+- http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
