@@ -2,13 +2,12 @@
 
 #include <interpret.hpp>
 
-const char *file = "lolol";
-
 int main()
 {
-	CPU cpu;
-	Interpret i(&cpu);
+	std::ifstream in("prgm", std::ios::binary);
+	CPU cpu(in);
+	Emul i(&cpu);
 
-	while (1)
+	while (true)
 		i.interpret();
 }

@@ -1,35 +1,41 @@
 #pragma once
 
-#include <functional>
-#include <fstream>
-
 #include <cpu.hpp>
 
-class Interpret {
+class Emul {
 	CPU *cpu;
 
 	// convert opcode data to address
 	addr_t addr(uint8_t *mem) const;
 	// convert data in memory to address
 	uint16_t get(addr_t addr) const;
+	void reljmp(uint8_t jmp);
 
-	void add_f(cpu_t n);
+	void add(cpu_t n);
 	void and_f(cpu_t n);
-	uint8_t asl_f(cpu_t n);
-	void cmp_f(cpu_t n);
-	void eor_f(cpu_t n);
-	void lda_f(cpu_t n);
-	void ora_f(cpu_t n);
-	void sbc_f(cpu_t n);
+	cpu_t asl(cpu_t n);
+	void bit(cpu_t n);
+	void cmp(cpu_t n);
+	void cpx(cpu_t n);
+	void cpy(cpu_t n);
+	void eor(cpu_t n);
+	void lda(cpu_t n);
+	void ldx(cpu_t n);
+	void ldy(cpu_t n);
+	void ora(cpu_t n);
+	void sbc(cpu_t n);
+	cpu_t rol(cpu_t n);
+	cpu_t ror(cpu_t n);
+	void sta(addr_t n);
+	void stx(addr_t n);
+	void sty(addr_t n);
+
+	void push(cpu_t n);
+	cpu_t pop();
+	addr_t pop_word();
 
 public:
-	Interpret(CPU *cpu)
-		: cpu(cpu)
-	{
-		// TODO: make this better
-
-		cpu->mem[PRGM_START + 0] = 0xea;
-	}
+	Emul(CPU *cpu) : cpu(cpu) {}
 
 	void interpret();
 };

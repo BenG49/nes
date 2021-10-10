@@ -11,7 +11,7 @@ void CPU::set_flags(uint16_t val, Flags to_set)
 	if (to_set.neg)
 		f.neg = GET_BIT(val, 7);
 	if (to_set.zero)
-		f.zero = !(val & 0xff);
+		f.zero = !LSB(val);
 	if (to_set.carry)
 		f.carry = GET_BIT(val, 8);
 	if (to_set.intr)
