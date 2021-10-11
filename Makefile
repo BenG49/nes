@@ -17,7 +17,7 @@ $(TARGET): $(OBJS) $(HDRS) $(CUR_DIR)/main.cpp
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(CUR_DIR)/main.cpp
 
 prgm: $(PRGM)
-	vasm6502_oldstyle -Fbin $< -o $(PRGM_TARGET)
+	vasm6502_oldstyle -Fbin -dotdir $< -o $(PRGM_TARGET)
 
 run: $(TARGET) $(PRGM_TARGET)
 	$(CUR_DIR)/$(TARGET)
