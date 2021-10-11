@@ -63,7 +63,7 @@ class CPU {
 
 	void adc(uint16_t addr);
 	void _and(uint16_t addr);
-	void asl(uint16_t addr); void asl_acc();
+	void asl(uint16_t addr); void asl_acc(uint16_t n);
 	void bcc(uint16_t addr);
 	void bcs(uint16_t addr);
 	void beq(uint16_t addr);
@@ -93,15 +93,15 @@ class CPU {
 	void lda(uint16_t addr);
 	void ldx(uint16_t addr);
 	void ldy(uint16_t addr);
-	void lsr(uint16_t addr); void lsr_acc();
+	void lsr(uint16_t addr); void lsr_acc(uint16_t n);
 	void nop(uint16_t addr);
 	void ora(uint16_t addr);
 	void pha(uint16_t addr);
 	void php(uint16_t addr);
 	void pla(uint16_t addr);
 	void plp(uint16_t addr);
-	void rol(uint16_t addr); void rol_acc();
-	void ror(uint16_t addr); void ror_acc();
+	void rol(uint16_t addr); void rol_acc(uint16_t n);
+	void ror(uint16_t addr); void ror_acc(uint16_t n);
 	void rti(uint16_t addr);
 	void rts(uint16_t addr);
 	void sbc(uint16_t addr);

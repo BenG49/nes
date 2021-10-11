@@ -31,7 +31,10 @@ int main()
 
 	CPU cpu(
 		[&](uint16_t addr) -> uint8_t { return ram[addr]; },
-		[&](uint16_t addr, uint8_t val) { ram[addr] = val; }
+		[&](uint16_t addr, uint8_t val) {
+			printf("[0x%04x] = 0x%02x\n", addr, val);
+			ram[addr] = val;
+		}
 	);
 
 	cpu.reset();

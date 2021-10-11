@@ -28,7 +28,7 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0x21, &CPU::_and, INX, 6)
 	OP(0x31, &CPU::_and, INY, 5)
 
-	OP(0x0a, &CPU::asl, ACC, 2)
+	OP(0x0a, &CPU::asl_acc, ACC, 2)
 	OP(0x06, &CPU::asl, ZPG, 5)
 	OP(0x16, &CPU::asl, ZPX, 6)
 	OP(0x0e, &CPU::asl, ABS, 6)
@@ -119,7 +119,7 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0xac, &CPU::ldy, ABS, 4)
 	OP(0xbc, &CPU::ldy, ABY, 4)
 
-	OP(0x4a, &CPU::lsr, IMM, 2)
+	OP(0x4a, &CPU::lsr_acc, ACC, 2)
 	OP(0x46, &CPU::lsr, ZPG, 5)
 	OP(0x56, &CPU::lsr, ZPY, 6)
 	OP(0x43, &CPU::lsr, ABS, 6)
@@ -139,13 +139,13 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0x68, &CPU::php, IMPL, 4)
 	OP(0x28, &CPU::plp, IMPL, 4)
 
-	OP(0x2a, &CPU::rol, IMM, 2)
+	OP(0x2a, &CPU::rol_acc, ACC, 2)
 	OP(0x26, &CPU::rol, ZPG, 5)
 	OP(0x36, &CPU::rol, ZPY, 6)
 	OP(0x23, &CPU::rol, ABS, 6)
 	OP(0x33, &CPU::rol, ABY, 7)
 
-	OP(0x6a, &CPU::ror, IMM, 2)
+	OP(0x6a, &CPU::ror_acc, ACC, 2)
 	OP(0x66, &CPU::ror, ZPG, 5)
 	OP(0x76, &CPU::ror, ZPY, 6)
 	OP(0x63, &CPU::ror, ABS, 6)
@@ -212,9 +212,16 @@ void CPU::reset()
 
 void CPU::exec(int ticks, bool countInstr)
 {
+	uint8_t op;
+	Instr instr;
+
+	// just for printing
+	uint16_t pc_start;
+
 	while (ticks > 0)
 	{
-		uint8_t op = bus_read(pc++);
+		pc_start = pc;
+		op = bus_read(pc++);
 
 		if (op == 0xff)
 		{
@@ -222,10 +229,7 @@ void CPU::exec(int ticks, bool countInstr)
 			exit(0);
 		}
 
-		Instr instr = vec[op];
-
-		printf("%#04x: ", pc - 1);
-		std::cout << instr.s; //<< '\n';
+		instr = vec[op];
 
 		uint16_t addr;
 		switch (instr.a) {
@@ -275,6 +279,9 @@ void CPU::exec(int ticks, bool countInstr)
 		}
 
 		(this->*instr.f)(addr);
+
+		printf("%#04x: ", pc_start);
+		std::cout << instr.s;
 
 		printf("\tA=0x%02x X=0x%02x Y=0x%02x SP=0x%02x - ", a, x, y, sp);
 		printf("N=%d V=%d B=%d D=%d I=%d Z=%d C=%d\n",

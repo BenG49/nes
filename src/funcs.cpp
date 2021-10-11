@@ -71,6 +71,9 @@ void CPU::asl(uint16_t addr)
 
 	bus_write(addr, LSB(out));
 }
+
+void CPU::asl_acc(uint16_t n) { set_flags(a <<= 1, true, true, true); }
+
 void CPU::bcc(uint16_t addr) { BR(!GET_BIT(sr, CARRY)) }
 void CPU::bcs(uint16_t addr) { BR(GET_BIT(sr, CARRY)) }
 void CPU::beq(uint16_t addr) { BR(GET_BIT(sr, ZERO)) }
@@ -177,6 +180,14 @@ void CPU::lsr(uint16_t addr)
 	bus_write(addr, LSB(out));
 }
 
+void CPU::lsr_acc(uint16_t n)
+{
+	SET_BIT(sr, a & 1, CARRY);
+	SET_BIT(sr, false, NEG);
+
+	set_flags(a >>= 1, true, true, false);
+}
+
 void CPU::nop(uint16_t addr) {}
 
 void CPU::ora(uint16_t addr) { set_flags(a |= bus_read(addr), true, true, false); }
@@ -196,6 +207,8 @@ void CPU::rol(uint16_t addr)
 	bus_write(addr, LSB(out));
 }
 
+void CPU::rol_acc(uint16_t n) { set_flags((a << 1) | GET_BIT(sr, CARRY), true, true, true); }
+
 void CPU::ror(uint16_t addr)
 {
 	uint16_t n = bus_read(addr);
@@ -206,6 +219,14 @@ void CPU::ror(uint16_t addr)
 	set_flags(out, true, true, false);
 
 	bus_write(addr, LSB(out));
+}
+
+void CPU::ror_acc(uint16_t n)
+{
+	SET_BIT(sr, a & 1, CARRY);
+	a >>= 1;
+	SET_BIT(a, GET_BIT(sr, CARRY), 7);
+	set_flags(a, true, true, false);
 }
 
 void CPU::rti(uint16_t addr) { sr = pop(); pc = pop_word(); }
