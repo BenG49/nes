@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <cstdint>
 #include <string>
@@ -46,13 +47,16 @@ class CPU {
 		Instr(func_t f, AddrMode a, uint8_t cycles, const char *str) : f(f), a(a), cycles(cycles), s(str)
 		{
 			s = s.substr(6, s.length() - 6);
+			std::transform(s.begin(), s.end(), s.begin(), ::toupper);
 		}
 	};
 
 	Instr vec[256];
 
+public:
 	bus_read_t bus_read;
 	bus_write_t bus_write;
+private:
 	
 	void set_flags(uint16_t val, bool neg, bool zero, bool carry);
 

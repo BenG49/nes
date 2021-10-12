@@ -190,6 +190,8 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0x8a, &CPU::txa, IMPL, 2)
 	OP(0x9a, &CPU::txs, IMPL, 2)
 	OP(0x98, &CPU::tya, IMPL, 2)
+
+	reset();
 }
 
 void CPU::nmi()
@@ -204,10 +206,13 @@ void CPU::irq()
 
 void CPU::reset()
 {
-	a = x = y = sr = cycles = 0;
-	sp = 0xff;
+	cycles = sp = 0;
 
-	JMP_BUS(IRQL);
+	push(0);
+	push(0);
+	push(0);
+
+	JMP_BUS(RSTL);
 }
 
 void CPU::exec(int ticks, bool countInstr)
@@ -215,12 +220,15 @@ void CPU::exec(int ticks, bool countInstr)
 	uint8_t op;
 	Instr instr;
 
-	// just for printing
+	#ifdef NES_DEBUG
 	uint16_t pc_start;
+	#endif
 
 	while (ticks > 0)
 	{
+		#ifdef NES_DEBUG
 		pc_start = pc;
+		#endif
 		op = bus_read(pc++);
 
 		if (op == 0xff)
@@ -280,26 +288,14 @@ void CPU::exec(int ticks, bool countInstr)
 
 		(this->*instr.f)(addr);
 
-		printf("%#04x: ", pc_start);
+		#ifdef NES_DEBUG
+
+		printf("%04x\t", pc_start);
 		std::cout << instr.s;
 
-		printf("\tA=0x%02x X=0x%02x Y=0x%02x SP=0x%02x - ", a, x, y, sp);
-		printf("N=%d V=%d B=%d D=%d I=%d Z=%d C=%d\n",
-			GET_BIT(sr, NEG),
-			GET_BIT(sr, OV),
-			GET_BIT(sr, BRK),
-			GET_BIT(sr, DEC),
-			GET_BIT(sr, INT),
-			GET_BIT(sr, ZERO),
-			GET_BIT(sr, CARRY));
-		
-		/*printf("\tZPG 0x00-0x04:");
-		for (int i = 0; i < 4; ++i) {
-			if (!(i % 2))
-				printf(" ");
-			printf("%02x", bus_read(i));
-		}
-		printf("\n");*/
+		printf("\tA:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%d\n", a, x, y, sr, sp, cycles);
+
+		#endif
 
 		cycles += instr.cycles;
 
