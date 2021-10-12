@@ -5,3 +5,11 @@
 - https://www.masswerk.at/6502/6502_instruction_set.html
 - http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
 - https://github.com/gianlucag/mos6502
+- https://stackoverflow.com/questions/52017657/6502-emulator-testing-nestest
+
+NES:
+- https://wiki.nesdev.org/w/index.php/Emulator_tests
+- http://www.qmtpro.com/~nes/misc/nestest.txt
+- https://wiki.nesdev.org/w/index.php/INES
+- http://nerdlypleasures.blogspot.com/2015/06/nes-hardware-explained.html
+- https://yizhang82.dev/nes-emu-main-loop
