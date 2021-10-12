@@ -19,11 +19,11 @@ NES::NES(std::ifstream &ines)
 			return rom[addr - 0x4020];
 		else
 		{
-			printf("Read to unsupported location: 0x%04x\n", addr);
+			printf("Read to unsupported location: 0x%04X\n", addr);
 			exit(1);
 		}
 	}, [&](uint16_t addr, uint8_t n) -> void {
-		// printf("[0x%04x] = 0x%02x\n", addr, n);
+		// printf("[0x%04X] = 0x%02X\n", addr, n);
 		if (addr < 0x2000)
 			ram[addr % RAM_SIZE] = n;
 		// cartridge
@@ -31,7 +31,7 @@ NES::NES(std::ifstream &ines)
 			rom[addr - 0x4020] = n;
 		else
 		{
-			printf("Write to unsupported location: 0x%04x\n", addr);
+			printf("Write to unsupported location: 0x%04X\n", addr);
 			exit(1);
 		}
 	})
@@ -49,10 +49,10 @@ void NES::read_ines(std::ifstream &in)
 {
 	uint8_t inb, prgrom_16k_sz, chrrom_8k_sz;
 
-	HDR_BYTE(0x4e, Invalid ines header!)
-	HDR_BYTE(0x45, Invalid ines header!)
-	HDR_BYTE(0x53, Invalid ines header!)
-	HDR_BYTE(0x1a, Invalid ines header!)
+	HDR_BYTE('N', Invalid ines header!)
+	HDR_BYTE('E', Invalid ines header!)
+	HDR_BYTE('S', Invalid ines header!)
+	HDR_BYTE(0x1A, Invalid ines header!)
 
 	in >> prgrom_16k_sz;
 	in >> chrrom_8k_sz;

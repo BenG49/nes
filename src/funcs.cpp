@@ -54,7 +54,7 @@ void CPU::adc(uint16_t addr)
 	a = LSB(out);
 }
 
-void CPU::_and(uint16_t addr)
+void CPU::AND(uint16_t addr)
 {
 	uint8_t n = bus_read(addr);
 	a = a & n;

@@ -43,7 +43,7 @@ class CPU {
 
 		std::string s;
 	
-		Instr() : f(&CPU::nop), a(IMPL), cycles() {}
+		Instr() : f(&CPU::nop), a(IMPL), cycles(), s("NOP") {}
 		Instr(func_t f, AddrMode a, uint8_t cycles, const char *str) : f(f), a(a), cycles(cycles), s(str)
 		{
 			s = s.substr(6, s.length() - 6);
@@ -66,7 +66,7 @@ private:
 	inline uint16_t pop_word();
 
 	void adc(uint16_t addr);
-	void _and(uint16_t addr);
+	void AND(uint16_t addr);
 	void asl(uint16_t addr); void asl_acc(uint16_t n);
 	void bcc(uint16_t addr);
 	void bcs(uint16_t addr);
@@ -121,6 +121,7 @@ private:
 	void txa(uint16_t addr);
 	void txs(uint16_t addr);
 	void tya(uint16_t addr);
+
 
 public:
 	CPU(bus_read_t bus_read, bus_write_t bus_write);

@@ -11,7 +11,7 @@ int main(int argc, const char *argv[])
 	int i = 0x300;
 	while (in.read((char *)ram + i++, 1));
 	
-	ram[i - 1] = 0xff;
+	ram[i - 1] = 0xFF;
 
 	ram[CPU::IRQL] = 3;
 	ram[CPU::IRQH] = 0;
@@ -25,7 +25,7 @@ int main(int argc, const char *argv[])
 	
 	NES nes(in);
 
-	printf("RST VECTOR 0x%02x%02x\n", nes.cpu.bus_read(nes.cpu.RSTH), nes.cpu.bus_read(nes.cpu.RSTL));
+	printf("RST VECTOR 0x%02X%02X\n", nes.cpu.bus_read(nes.cpu.RSTH), nes.cpu.bus_read(nes.cpu.RSTL));
 
 	std::string s;
 	while (true)
@@ -37,7 +37,7 @@ int main(int argc, const char *argv[])
 			case 'q': exit(0);
 			case 'x': {
 				uint16_t addr = std::strtol(s.c_str() + 2, nullptr, 16);
-				printf("0x%04x: %02x\n", addr, nes.cpu.bus_read(addr));
+				printf("0x%04X: %02X\n", addr, nes.cpu.bus_read(addr));
 				break;
 			}
 			case 'r':

@@ -9,7 +9,7 @@
 	}
 
 #define MSB(var) ((var) >> 8)
-#define LSB(var) ((var) & 0xff)
+#define LSB(var) ((var) & 0xFF)
 
 #define JMP_BUS(addr)               \
 	uint8_t l = bus_read(addr);     \
