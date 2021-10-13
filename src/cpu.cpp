@@ -3,6 +3,7 @@
 #include <iostream>
 
 #ifdef NES_DEBUG
+#include <algorithm>
 #include <iomanip>
 #endif
 
@@ -198,25 +199,44 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	reset();
 }
 
+// irq but cannot be disabled
 void CPU::nmi()
 {
+	SET_BIT(sr, false, BRK);
 
+	push_word(pc);
+
+	push(sr);
+
+	SET_BIT(sr, true, INT);
+
+	JMP_BUS(IRQL);
 }
 
 void CPU::irq()
 {
+	// interrupt not disabled
+	if (!GET_BIT(sr, INT))
+	{
+		SET_BIT(sr, false, BRK);
 
+		push_word(pc);
+
+		push(sr);
+
+		SET_BIT(sr, true, INT);
+
+		JMP_BUS(IRQL);
+	}
 }
 
 void CPU::reset()
 {
-	cycles = sp = 0;
+	a = y = x = 0;
 
-	push(0);
-	push(0);
-	push(0);
+	JMP_BUS(RSTL)
 
-	JMP_BUS(RSTL);
+	sp = 0xFD;
 }
 
 void CPU::exec(int ticks, bool countInstr)
@@ -299,8 +319,14 @@ void CPU::exec(int ticks, bool countInstr)
 
 		#ifdef NES_DEBUG
 
-		for (int i = pc_start + 1; i < pc; ++i)
-			printf("%02X ", bus_read(i));
+		int args = std::min(pc - pc_start, 2);
+		for (int i = 0; i < 2; ++i)
+		{
+			if (i < args)
+				printf("%02X ", bus_read(pc_start + 1 + i));
+			else
+				printf("   ");
+		}
 		
 		std::cout << ' ' << instr.s;
 

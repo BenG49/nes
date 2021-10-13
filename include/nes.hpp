@@ -5,8 +5,9 @@
 #include <fstream>
 
 struct NES {
-// private:
+private:
 	static const int RAM_SIZE = 0x800;
+	static const int RAM_MASK = 0x7FF;
 
 	void read_err(const char *err) const;
 	void read_ines(std::ifstream &in);

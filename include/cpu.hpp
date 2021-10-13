@@ -27,6 +27,7 @@ enum AddrMode {
 };
 
 class CPU {
+public:
 	// NOTE: stack pointer = 0x100 + sp, grows downward
 	// NV-BDIZC
 	uint8_t a, x, y, sp, sr;
@@ -43,7 +44,7 @@ class CPU {
 
 		std::string s;
 	
-		Instr() : f(&CPU::nop), a(IMPL), cycles(), s("NOP") {}
+		Instr() : f(&CPU::nop), a(IMPL), cycles(2), s("NOP") {}
 		Instr(func_t f, AddrMode a, uint8_t cycles, const char *str) : f(f), a(a), cycles(cycles), s(str)
 		{
 			s = s.substr(6, s.length() - 6);
@@ -53,7 +54,6 @@ class CPU {
 
 	Instr vec[256];
 
-public:
 	bus_read_t bus_read;
 	bus_write_t bus_write;
 private:
@@ -121,7 +121,6 @@ private:
 	void txa(uint16_t addr);
 	void txs(uint16_t addr);
 	void tya(uint16_t addr);
-
 
 public:
 	CPU(bus_read_t bus_read, bus_write_t bus_write);

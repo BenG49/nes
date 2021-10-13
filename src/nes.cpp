@@ -13,7 +13,7 @@ NES::NES(std::ifstream &ines)
 	: cpu([=](uint16_t addr) -> uint8_t {
 		// ram and mirrors
 		if (addr < 0x2000)
-			return ram[addr % RAM_SIZE];
+			return ram[addr & RAM_MASK];
 		// cartridge
 		else if (addr > 0x4020)
 			return rom[addr - 0x4020];
@@ -25,7 +25,7 @@ NES::NES(std::ifstream &ines)
 	}, [&](uint16_t addr, uint8_t n) -> void {
 		// printf("[0x%04X] = 0x%02X\n", addr, n);
 		if (addr < 0x2000)
-			ram[addr % RAM_SIZE] = n;
+			ram[addr & RAM_MASK] = n;
 		// cartridge
 		else if (addr > 0x4020)
 			rom[addr - 0x4020] = n;
@@ -57,11 +57,12 @@ void NES::read_ines(std::ifstream &in)
 	in >> prgrom_16k_sz;
 	in >> chrrom_8k_sz;
 
-	// read rest of header, TODO: actually read flags
-	for (int i = 0; i < 10; ++i) in >> inb;
+	in >> inb; // flags 6
+	in >> inb; // flags 7
+	in >> inb; // flags 8
+	in >> inb; // flags 9
+	in >> inb; // flags 10
 
 	// read prg rom
 	for (int i = prgrom_16k_sz * 0x4000 - 1; i >= 0; --i) in >> rom[i];
-
-	// TODO: chr rom, playchoice inst rom and prom
 }

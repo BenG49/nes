@@ -11,7 +11,4 @@
 #define MSB(var) ((var) >> 8)
 #define LSB(var) ((var) & 0xFF)
 
-#define JMP_BUS(addr)               \
-	uint8_t l = bus_read(addr);     \
-	uint8_t h = bus_read(addr + 1); \
-	pc = (h << 8) | l;
+#define JMP_BUS(addr) pc = (bus_read(addr + 1) << 8) | bus_read(addr);
