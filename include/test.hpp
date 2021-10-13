@@ -2,4 +2,8 @@
 
 #include <cpu.hpp>
 
-bool cpu_test(std::ifstream &test, int instrs, std::function<bool(CPU&)> verify);
+#include <vector>
+
+void run_tests(CPU *cpu);
+
+void cpu_test(std::vector<uint8_t> binfile, std::function<bool(CPU*)> verify, CPU *cpu);

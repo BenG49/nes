@@ -255,7 +255,7 @@ void CPU::exec(int ticks, bool countInstr)
 		if (op == 0xFF)
 		{
 			puts("Program halted");
-			exit(0);
+			return;
 		}
 
 		instr = vec[op];
@@ -340,3 +340,6 @@ void CPU::exec(int ticks, bool countInstr)
 		else ticks -= instr.cycles;
 	}
 }
+
+void CPU::set_read(bus_read_t br) { bus_read = br; }
+void CPU::set_write(bus_write_t bw) { bus_write = bw; }

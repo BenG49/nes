@@ -12,4 +12,7 @@ L2:	clc
 	bcs Error 
 
 Error:
-	.byte 0xFF
+	.org 0x400
+
+	; IRQ VECTOR
+	.org 0x500

@@ -131,6 +131,9 @@ public:
 
 	void exec(int ticks, bool countInstr);
 
+	void set_read(bus_read_t bus_read);
+	void set_write(bus_write_t bus_write);
+
 	static const uint16_t NMIL = 0xFFFA;
 	static const uint16_t NMIH = 0xFFFB;
 	static const uint16_t RSTL = 0xFFFC;

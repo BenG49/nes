@@ -5,13 +5,15 @@
 
 int main(int argc, const char *argv[])
 {
-	std::ifstream in(argv[1], std::ios::binary);
+	CPU cpu([](uint16_t n){ return 0; }, [](uint16_t a, uint8_t n) {});
 
-	cpu_test(in,  )
+	run_tests(&cpu);
 
-	// NES nes(in);
+	/*std::ifstream in(argv[1], std::ios::binary);
 
-	/*std::string s;
+	NES nes(in);
+
+	std::string s;
 	while (true)
 	{
 		printf("> ");
