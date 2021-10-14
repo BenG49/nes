@@ -94,11 +94,11 @@ void CPU::bpl(uint16_t addr) { BR(!GET_BIT(sr, NEG)) }
 
 void CPU::brk(uint16_t addr)
 {
-	push_word(++pc);
+	push_word(pc);
 	push(sr | BRK);
 	SET_BIT(sr, true, INT);
 
-	pc = (bus_read(IRQL) << 8) | bus_read(IRQH);
+	JMP_BUS(IRQL)
 }
 
 void CPU::bvc(uint16_t addr) { BR(!GET_BIT(sr, OV)) }

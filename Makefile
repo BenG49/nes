@@ -9,18 +9,18 @@ OBJS=${SRCS:.cpp=.o}
 PRGM=prgm.asm
 
 TARGET=a.out
-PRGM_TARGET=prgm.out
+# PRGM_TARGET=prgm.out
 
-.PHONY: clean debug prgm
+.PHONY: clean debug prgm run
 
 $(TARGET): $(OBJS) $(HDRS) $(CUR_DIR)/main.cpp
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(CUR_DIR)/main.cpp
 
-prgm: $(PRGM)
-	vasm6502_oldstyle -Fbin -dotdir $< -o $(PRGM_TARGET)
-
 run: $(TARGET) $(PRGM_TARGET)
 	$(CUR_DIR)/$(TARGET)
+
+# prgm: $(PRGM)
+# 	vasm6502_oldstyle -Fbin -dotdir $< -o $(PRGM_TARGET)
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c -o $@ $<

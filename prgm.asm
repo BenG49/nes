@@ -8,4 +8,5 @@
 	; IRQ VECTOR
 	.org 0x500
 
+	plp
 	rts	; 60

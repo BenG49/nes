@@ -141,7 +141,7 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 
 	OP(0x48, &CPU::pha, IMPL, 3)
 	OP(0x08, &CPU::php, IMPL, 3)
-	OP(0x68, &CPU::php, IMPL, 4)
+	OP(0x68, &CPU::pla, IMPL, 4)
 	OP(0x28, &CPU::plp, IMPL, 4)
 
 	OP(0x2A, &CPU::rol_acc, ACC, 2)

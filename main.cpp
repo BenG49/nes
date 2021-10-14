@@ -5,9 +5,9 @@
 
 int main(int argc, const char *argv[])
 {
-	CPU cpu([](uint16_t n){ return 0; }, [](uint16_t a, uint8_t n) {});
+	/*CPU cpu([](uint16_t n){ return 0; }, [](uint16_t a, uint8_t n) {});
 
-	run_tests(&cpu);
+	run_tests(&cpu);*/
 
 	/*std::ifstream in(argv[1], std::ios::binary);
 

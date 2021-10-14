@@ -19,4 +19,4 @@ struct MemState {
 		: binfile(bin), nmi(nmi), irq(irq) {}
 };
 
-void cpu_test(MemState *mem, std::function<bool(CPU*)> verify, CPU *cpu);
+void cpu_test(MemState mem, std::function<bool(CPU*)> verify, CPU *cpu);
