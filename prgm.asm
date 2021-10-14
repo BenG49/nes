@@ -1,18 +1,11 @@
 	.org 0x400
 
-	jmp L1 ; test JMP
-	nop
-	nop
-L1:	sec
-	bcc Error
-	bcs L2
-	nop
-	nop
-L2:	clc
-	bcs Error 
+	brk	; 00
+	nop	; ea
 
-Error:
-	.org 0x400
+	.byte 0xff	; ff
 
 	; IRQ VECTOR
 	.org 0x500
+
+	rts	; 60
