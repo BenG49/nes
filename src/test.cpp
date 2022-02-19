@@ -8,28 +8,28 @@ void run_tests(CPU *cpu)
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0x50,
 		0x69, 0x50
-	})), [](CPU *cpu) -> bool {
+	}), 0x400), [](CPU *cpu) -> bool {
 		return !GET_BIT(cpu->sr, CARRY) && GET_BIT(cpu->sr, OV);
 	}, cpu);
 
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0x50,
 		0x69, 0x90
-	})), [](CPU *cpu) -> bool {
+	}), 0x400), [](CPU *cpu) -> bool {
 		return !GET_BIT(cpu->sr, CARRY) && !GET_BIT(cpu->sr, OV);
 	}, cpu);
 
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0x50,
 		0x69, 0xd0
-	})), [](CPU *cpu) -> bool {
+	}), 0x400), [](CPU *cpu) -> bool {
 		return GET_BIT(cpu->sr, CARRY) && !GET_BIT(cpu->sr, OV);
 	}, cpu);
 
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0xd0,
 		0x69, 0x90
-	})), [](CPU *cpu) -> bool {
+	}), 0x400), [](CPU *cpu) -> bool {
 		return GET_BIT(cpu->sr, CARRY) && GET_BIT(cpu->sr, OV);
 	}, cpu);
 
@@ -41,7 +41,7 @@ void run_tests(CPU *cpu)
 	v[0x100] = 0x28;
 	v[0x101] = 0x60;
 
-	cpu_test(MemState(v, 0, 0x500),
+	cpu_test(MemState(v, 0x400, 0, 0x500),
 		[](CPU *cpu) -> bool {
 			return true;
 	}, cpu);
@@ -51,13 +51,13 @@ void cpu_test(MemState mem, std::function<bool(CPU*)> verify, CPU *cpu)
 {
 	uint8_t ram[0x10000];
 
-	int i = 0x400;
+	int i = mem.prog_addr;
 	for (char c : mem.binfile) ram[i++] = c;
 	
 	ram[i] = 0xFF;
 
-	ram[CPU::RSTH] = 4;
-	ram[CPU::RSTL] = 0;
+	ram[CPU::RSTH] = MSB(mem.prog_addr);
+	ram[CPU::RSTL] = LSB(mem.prog_addr);
 
 	ram[CPU::IRQH] = MSB(mem.irq);
 	ram[CPU::IRQL] = LSB(mem.irq);
