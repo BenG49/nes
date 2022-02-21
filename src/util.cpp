@@ -22,3 +22,16 @@ std::vector<uint8_t> readfile(const char *filename)
 
 	return data;
 }
+
+std::string to_hex(uint16_t val, uint bytes)
+{
+	if (bytes > 2 || bytes < 1)
+		return std::string();
+
+	char *formats[] = { "%02X", "%04X" };
+
+	char buf[5];
+	snprintf(buf, sizeof(buf), formats[bytes - 1], val);
+
+	return std::string(buf);
+}

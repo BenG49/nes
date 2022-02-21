@@ -7,8 +7,8 @@
 
 #include <util.hpp>
 
-const uint8_t NEG   = 8;
-const uint8_t OV    = 7;
+const uint8_t NEG   = 7;
+const uint8_t OV    = 6;
 const uint8_t CONST = 5;
 const uint8_t BRK   = 4;
 const uint8_t DEC   = 3;
@@ -37,18 +37,19 @@ public:
 	int cycles;
 	
 	struct Instr {
-		func_t f;
-		AddrMode a;
+		func_t func;
+		AddrMode addr_mode;
 	
 		uint8_t cycles;
 
-		std::string s;
+		std::string name;
 	
-		Instr() : f(&CPU::nop), a(IMPL), cycles(2), s("NOP") {}
-		Instr(func_t f, AddrMode a, uint8_t cycles, const char *str) : f(f), a(a), cycles(cycles), s(str)
+		Instr() : func(&CPU::nop), addr_mode(IMPL), cycles(2), name("NOP") {}
+		Instr(func_t f, AddrMode a, uint8_t cycles, const char *str) : func(f), addr_mode(a), cycles(cycles), name(str)
 		{
-			s = s.substr(6, s.length() - 6);
-			std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+			// substring is used because name is passed in as "&CPU::name", couldn't be bothered to fix
+			name = name.substr(6, name.length() - 6);
+			std::transform(name.begin(), name.end(), name.begin(), ::toupper);
 		}
 	};
 
@@ -56,6 +57,8 @@ public:
 
 	bus_read_t bus_read;
 	bus_write_t bus_write;
+
+	bool halted;
 private:
 	
 	void set_flags(uint16_t val, bool neg, bool zero, bool carry);
@@ -140,4 +143,6 @@ public:
 	static const uint16_t RSTH = 0xFFFD;
 	static const uint16_t IRQL = 0xFFFE;
 	static const uint16_t IRQH = 0xFFFF;
+
+	std::string disas(uint8_t instr, uint16_t val);
 };

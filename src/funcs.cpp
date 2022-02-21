@@ -5,7 +5,7 @@
 #define BR(flag) \
 	if (flag) pc = addr;
 
-#define TR(func, to, from) \
+#define TR(func, from, to) \
 	void CPU::func(uint16_t addr) { to = from; }
 
 // ----------- //
@@ -94,11 +94,12 @@ void CPU::bpl(uint16_t addr) { BR(!GET_BIT(sr, NEG)) }
 
 void CPU::brk(uint16_t addr)
 {
-	push_word(pc);
+	halted = true;
+	/*push_word(pc);
 	push(sr | BRK);
 	SET_BIT(sr, true, INT);
 
-	JMP_BUS(IRQL)
+	JMP_BUS(IRQL)*/
 }
 
 void CPU::bvc(uint16_t addr) { BR(!GET_BIT(sr, OV)) }

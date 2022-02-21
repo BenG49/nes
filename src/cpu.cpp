@@ -5,13 +5,14 @@
 #ifdef NES_DEBUG
 #include <algorithm>
 #include <iomanip>
+#include <bitset>
 #endif
 
 #define OP(opcode, func, addr, instrs) \
 	vec[opcode] = Instr(func, addr, instrs, #func);
 
 CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
-	: a(), x(), y(), sp(), pc(), cycles(), bus_read(bus_read), bus_write(bus_write)
+	: a(), x(), y(), sp(), pc(), cycles(), bus_read(bus_read), bus_write(bus_write), halted(false)
 {
 	// opcodes
 	OP(0x69, &CPU::adc, IMM, 2)
@@ -184,10 +185,12 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0x86, &CPU::stx, ZPG, 3)
 	OP(0x96, &CPU::stx, ZPY, 4)
 	OP(0x8E, &CPU::stx, ABS, 4)
+	OP(0xE8, &CPU::inx, IMPL, 2);
 
 	OP(0x84, &CPU::sty, ZPG, 3)
 	OP(0x94, &CPU::sty, ZPX, 4)
 	OP(0x8C, &CPU::sty, ABS, 4)
+	OP(0xC8, &CPU::iny, IMPL, 2);
 
 	OP(0xAA, &CPU::tax, IMPL, 2)
 	OP(0xA8, &CPU::tay, IMPL, 2)
@@ -236,9 +239,10 @@ void CPU::reset()
 
 	JMP_BUS(RSTL)
 
-	sp = 0xFD;
+	sp = 0xFF;
 }
 
+// -1 to run forever
 void CPU::exec(int ticks, bool countInstr)
 {
 	uint8_t op;
@@ -248,15 +252,11 @@ void CPU::exec(int ticks, bool countInstr)
 	uint16_t pc_start;
 	#endif
 
-	while (ticks > 0)
+	while (ticks > 0 || ticks == -1)
 	{
-		op = bus_read(pc++);
+		if (halted) return;
 
-		if (op == 0xFF)
-		{
-			puts("Program halted");
-			return;
-		}
+		op = bus_read(pc++);
 
 		instr = vec[op];
 
@@ -264,18 +264,18 @@ void CPU::exec(int ticks, bool countInstr)
 
 		pc_start = pc - 1;
 
-		printf("%04X  %02X ", pc_start, op);
+		printf("%04X %02X ", pc_start, op);
 
 		#endif
 
 		uint16_t addr;
-		switch (instr.a) {
+		switch (instr.addr_mode) {
 			case IMPL:
 			case ACC: break;
 			case IMM: addr = pc++; break;
 			case ZPG: addr = bus_read(pc++); break;
-			case ZPX: addr = bus_read(pc++ + x); break;
-			case ZPY: addr = bus_read(pc++ + y); break;
+			case ZPX: addr = bus_read(pc++) + x; break;
+			case ZPY: addr = bus_read(pc++) + y; break;
 			case ABS:
 				addr = bus_read(pc++);
 				addr |= (bus_read(pc++) << 8);
@@ -303,43 +303,119 @@ void CPU::exec(int ticks, bool countInstr)
 				addr |= (bus_read(pc++) << 8);
 				addr = bus_read(addr);
 				break;
-			case INX:
-				addr = bus_read(pc++);
-				addr |= (bus_read(pc++) << 8);
-				addr = bus_read(addr + x);
+			case INX: {
+				uint8_t base = bus_read(pc++) + x;
+
+				addr = bus_read(base) | (bus_read(base + 1) << 8);
 				break;
-			case INY:
-				addr = bus_read(pc++);
-				addr |= (bus_read(pc++) << 8);
-				addr = bus_read(addr) + y;
+			}
+			case INY: {
+				uint8_t base = bus_read(pc++);
+
+				addr = bus_read(base) | (bus_read(base + 1) << 8);
+				addr += y;
 				break;
+			}
 		}
 
-		(this->*instr.f)(addr);
+		(this->*instr.func)(addr);
 
 		#ifdef NES_DEBUG
 
-		int args = std::min(pc - pc_start, 2);
+		uint16_t val = 0;
+
+		int args = std::min(pc - pc_start - 1, 2);
 		for (int i = 0; i < 2; ++i)
 		{
 			if (i < args)
-				printf("%02X ", bus_read(pc_start + 1 + i));
+			{
+				uint8_t read = bus_read(pc_start + i + 1);
+				printf("%02X ", read);
+				val <<= 8;
+				val |= read;
+			}
 			else
 				printf("   ");
 		}
-		
-		std::cout << ' ' << instr.s;
 
-		printf("  A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%d\n", a, x, y, sr, sp, cycles);
+		// switch endianness for printing address
+		if (val > 0xff)
+		{
+			val = ((val & 0xff) << 8) | (val >> 8);
+		}
+	
+		printf(" %-14s", disas(op, val).c_str());
+
+		printf("|%02X %02X %02X %02X|", a, x, y, sp);
+		std::cout << std::bitset<6>(((sr & 0b11000000) >> 2) | (sr & 0b1111)) << '\n';
 
 		#endif
 
 		cycles += instr.cycles;
 
-		if (countInstr) --ticks;
-		else ticks -= instr.cycles;
+		if (ticks != -1)
+		{
+			if (countInstr) --ticks;
+			else ticks -= instr.cycles;
+		}
 	}
 }
 
 void CPU::set_read(bus_read_t br) { bus_read = br; }
 void CPU::set_write(bus_write_t bw) { bus_write = bw; }
+
+std::string CPU::disas(uint8_t instr, uint16_t val)
+{
+	CPU::Instr i = vec[instr];
+
+	std::string out;
+
+	out += i.name;
+
+	if (i.addr_mode == IMPL)
+		return out;
+
+	out += " ";
+
+	switch (i.addr_mode)
+	{
+		case ACC:
+			out += "A";
+			break;
+		case IMM:
+			out += "#$" + to_hex(val, 1);
+			break;
+		case ZPG:
+			out += "$" + to_hex(val, 1);
+			break;
+		case ZPX:
+			out += "$" + to_hex(val, 1) + ",X";
+			break;
+		case ZPY:
+			out += "$" + to_hex(val, 1) + ",Y";
+			break;
+		case INX:
+			out += "($" + to_hex(val, 1) + ",X)";
+			break;
+		case INY:
+			out += "($" + to_hex(val, 1) + "),Y";
+			break;
+		case ABS:
+			out += "$" + to_hex(val, 2);
+			break;
+		case ABX:
+			out += "$" + to_hex(val, 2) + ",X";
+			break;
+		case ABY:
+			out += "$" + to_hex(val, 2) + ",Y";
+			break;
+		case IND:
+			out += "($" + to_hex(val, 2) + ")";
+			break;
+		case REL:
+			out += "$" + to_hex(val + pc, 2);
+			break;
+	}
+
+	return out;
+}
