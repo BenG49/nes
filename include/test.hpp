@@ -4,7 +4,7 @@
 
 #include <vector>
 
-void run_tests(CPU *cpu);
+void run_tests();
 
 struct MemState {
 	uint16_t prog_addr;
@@ -20,4 +20,4 @@ struct MemState {
 		: prog_addr(prog_addr), binfile(bin), nmi(nmi), irq(irq) {}
 };
 
-void cpu_test(MemState mem, std::function<bool(CPU*)> verify, CPU *cpu);
+void cpu_test(MemState mem, std::function<bool(CPU*)> verify);
