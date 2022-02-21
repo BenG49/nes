@@ -18,21 +18,44 @@ void snake()
 	if (SDL_Init(SDL_INIT_EVERYTHING))
 		printf("error initializing SDL: %s\n", SDL_GetError());
 
-	SDL_Window *win = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 32, 32, 0);
-	SDL_Surface *surface = SDL_GetWindowSurface(win);
-	Uint32 *pixels = (Uint32 *)surface->pixels;
+	SDL_Window *win = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 400, 400, 0);
+	SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, 0);
 
-	Uint32 colors[] = {
-		SDL_MapRGBA(surface->format, 0,   0,   0,   255),
-		SDL_MapRGBA(surface->format, 255, 255, 255, 255),
-		SDL_MapRGBA(surface->format, 100, 100, 100, 255),
-		SDL_MapRGBA(surface->format, 255, 0,   0,   255),
-		SDL_MapRGBA(surface->format, 0,   255, 0,   255),
-		SDL_MapRGBA(surface->format, 0,   0,   255, 255),
-		SDL_MapRGBA(surface->format, 255, 0,   255, 255),
-		SDL_MapRGBA(surface->format, 255, 255, 0,   255),
-		SDL_MapRGBA(surface->format, 0,   255, 255, 255),
+	SDL_SetWindowMinimumSize(win, 32, 32);
+
+	SDL_RenderSetLogicalSize(renderer, 32, 32);
+	SDL_RenderSetIntegerScale(renderer, (SDL_bool)true);
+
+	SDL_Texture *screen_tex = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_RGBA8888,
+		SDL_TEXTUREACCESS_STATIC,
+		32, 32
+	);
+
+	uint32_t *pixels = (uint32_t *)malloc(32 * 32 * 4);
+
+	uint32_t colors[] = {
+		0x000000ff, // black
+		0xffffffff, // white
+		0xff0000ff, // red
+		0xffff00ff, // cyan
+		0x00ffffff, // magenta
+		0x00ff00ff, // green
+		0x0000ffff, // blue
+		0xff00ffff, // yellow
+		0xffee00ff, // orange
+		0x2a2aa5ff, // brown
+		0xee0000ff, // light red
+		0x404040ff, // gray
+		0x202020ff, // dark gray
+		0x00ee00ff, // light green
+		0x0000eeff, // light blue
+		0x606060ff, // light gray
 	};
+
+	for (int i = 0; i < 32 * 32; ++i)
+		pixels[i] = colors[0];
 
 	// -- CPU -- //
 	CPU cpu([](uint16_t n){ return 0; }, [](uint16_t a, uint8_t n) {});
@@ -64,9 +87,7 @@ void snake()
 		ram[addr] = val;
 
 		if (addr >= 0x200 && addr < 0x600)
-		{
 			pixels[addr - 0x200] = colors[val];
-		}
 	});
 
 	cpu.reset();
@@ -104,7 +125,10 @@ void snake()
 		
 		cpu.exec(1, true);
 
-		SDL_UpdateWindowSurface(win);
+		SDL_RenderClear(renderer);
+		SDL_UpdateTexture(screen_tex, nullptr, pixels, 32 * 4);
+		SDL_RenderCopy(renderer, screen_tex, nullptr, nullptr);
+		SDL_RenderPresent(renderer);
 	}
 
 	SDL_DestroyWindow(win);
