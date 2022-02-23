@@ -85,54 +85,86 @@ void snake()
 
 	cpu.reset();
 
-	bool run = true;
+	std::function<void(CPU *)> snake_callback = [&](CPU *cpu) {
+		SDL_RenderClear(renderer);
+		SDL_UpdateTexture(screen_tex, nullptr, pixels, 32 * 4);
+		SDL_RenderCopy(renderer, screen_tex, nullptr, nullptr);
+		SDL_RenderPresent(renderer);
 
-	while (run)
-	{
 		SDL_Event e;
 		while (SDL_PollEvent(&e))
 		{
 			switch (e.type) {
 				case SDL_QUIT:
-					run = false;
+					cpu->halted = true;
 					break;
 				case SDL_KEYDOWN:
 					switch (e.key.keysym.sym) {
 						case SDLK_w:
-							cpu.bus_write(0xff, 0x77);
+							cpu->bus_write(0xff, 0x77);
 							break;
 						case SDLK_s:
-							cpu.bus_write(0xff, 0x73);
+							cpu->bus_write(0xff, 0x73);
 							break;
 						case SDLK_a:
-							cpu.bus_write(0xff, 0x61);
+							cpu->bus_write(0xff, 0x61);
 							break;
 						case SDLK_d:
-							cpu.bus_write(0xff, 0x64);
+							cpu->bus_write(0xff, 0x64);
 							break;
 					}
 
 					break;
 			}
 		}
-		
-		cpu.exec(1, true);
+	};
 
-		SDL_RenderClear(renderer);
-		SDL_UpdateTexture(screen_tex, nullptr, pixels, 32 * 4);
-		SDL_RenderCopy(renderer, screen_tex, nullptr, nullptr);
-		SDL_RenderPresent(renderer);
-	}
+	cpu.exec_with_callback(snake_callback);
 
 	SDL_DestroyWindow(win);
 	SDL_Quit();
 }
 
-// TODO: fix BEQ extra byte when jumping
+// TODO: add masswerk virtual 6502 trace style
 int main(int argc, const char *argv[])
 {
-	puts("addr instr     disass        |AC XR YR SP|nvdizc");
-	snake();
+	//C000  4C F5 C5  JMP $C5F5                       A:00 X:00 Y:00 P:24 SP:FD
+	std::function<void(CPU *)> test_trace_f = [](CPU *cpu) {
+		uint8_t op = cpu->bus_read(cpu->pc);
+		CPU::Instr instr = cpu->vec[op];
 
-	// run_tests();
+		printf("%04X  ", cpu->pc);
+
+		int bytes = cpu->instr_bytes(instr.addr_mode);
+		for (int i = 0; i < 2; ++i)
+		{
+			if (i < bytes)
+				printf("%02X ", cpu->bus_read(cpu->pc + i));
+			else
+				printf("   ");
+		}
+
+		uint16_t args = 0;
+		if (bytes == 2)
+			args = cpu->bus_read(cpu->pc + 1);
+		else if (bytes == 3)
+			args = cpu->bus_read(cpu->pc + 1) | (cpu->bus_read(cpu->pc + 2) << 8);
+
+		printf(" %-32s A:%02X X:%02X Y:%02X P:%02X SP:%02X", cpu->disas(op, args).c_str(), cpu->a, cpu->x, cpu->y, cpu->sr, cpu->sp);
+
+		puts("");
+	};
+
+	NES nes(readfile("nestest.nes"));
+	
+	/*for (int i = 0; i < 0x100; ++i)
+	{
+		if (i % 0x10 == 0) printf("\n");
+
+		printf("%02X ", nes.ram[i]);
+	}
+	printf("\n");*/
+
+	nes.cpu.pc = 0xC000;
+	nes.cpu.exec_with_callback(test_trace_f);
 }

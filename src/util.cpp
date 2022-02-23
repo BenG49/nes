@@ -28,10 +28,11 @@ std::string to_hex(uint16_t val, uint bytes)
 	if (bytes > 2 || bytes < 1)
 		return std::string();
 
-	char *formats[] = { "%02X", "%04X" };
-
 	char buf[5];
-	snprintf(buf, sizeof(buf), formats[bytes - 1], val);
+	if (bytes - 1 == 0)
+		snprintf(buf, sizeof(buf), "%02X", val);
+	else
+		snprintf(buf, sizeof(buf), "%04X", val);
 
 	return std::string(buf);
 }

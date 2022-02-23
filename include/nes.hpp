@@ -11,6 +11,8 @@ private:
 	static const int RAM_MASK = 0x7FF;
 
 public:
+	NES(const std::vector<uint8_t> &ines);
+
 	CPU cpu;
 	ROM rom;
 
@@ -41,6 +43,4 @@ public:
 	uint8_t read_prg_rom(uint16_t addr);
 
 	void write(uint16_t addr, uint8_t data);
-
-	NES(const ROM &rom);
 };

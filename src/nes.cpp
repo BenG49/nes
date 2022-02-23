@@ -3,11 +3,13 @@
 #include <functional>
 #include <iostream>
 
-NES::NES(const ROM &rom)
-	: cpu([=](uint16_t addr) -> uint8_t { this->read(addr); },
+NES::NES(const std::vector<uint8_t> &ines)
+	: cpu([=](uint16_t addr) -> uint8_t { return this->read(addr); },
 	      [&](uint16_t addr, uint8_t data) { this->write(addr, data); })
-	, rom(rom)
+	, rom(ines)
+	, ram()
 {
+	cpu.reset();
 }
 
 uint8_t NES::read(uint16_t addr)
@@ -31,7 +33,7 @@ uint8_t NES::read_prg_rom(uint16_t addr)
 
 	if (rom.prg_rom.size() == 0x4000)
 		return rom.prg_rom[addr % 0x4000];
-	
+
 	return rom.prg_rom[addr];
 }
 

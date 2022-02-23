@@ -2,11 +2,9 @@
 
 #include <iostream>
 
-#ifdef NES_DEBUG
 #include <algorithm>
 #include <iomanip>
 #include <bitset>
-#endif
 
 #define OP(opcode, func, addr, instrs) \
 	vec[opcode] = Instr(func, addr, instrs, #func);
@@ -198,8 +196,6 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0x8A, &CPU::txa, IMPL, 2)
 	OP(0x9A, &CPU::txs, IMPL, 2)
 	OP(0x98, &CPU::tya, IMPL, 2)
-
-	reset();
 }
 
 // irq but cannot be disabled
@@ -241,130 +237,84 @@ void CPU::reset()
 
 	sp = 0xFF;
 }
-
-// -1 to run forever
-void CPU::exec(int ticks, bool countInstr)
+void CPU::step()
 {
-	uint8_t op;
-	Instr instr;
+	uint8_t op = bus_read(pc++);
+	Instr instr = vec[op];
 
-	#ifdef NES_DEBUG
-	uint16_t pc_start;
-	#endif
-
-	while (ticks > 0 || ticks == -1)
-	{
-		if (halted) return;
-
-		op = bus_read(pc++);
-
-		instr = vec[op];
-
-		#ifdef NES_DEBUG
-
-		pc_start = pc - 1;
-
-		printf("%04X %02X ", pc_start, op);
-
-		#endif
-
-		uint16_t addr;
-		switch (instr.addr_mode) {
-			case IMPL:
-			case ACC: break;
-			case IMM: addr = pc++; break;
-			case ZPG: addr = bus_read(pc++); break;
-			case ZPX: addr = bus_read(pc++) + x; break;
-			case ZPY: addr = bus_read(pc++) + y; break;
-			case ABS:
-				addr = bus_read(pc++);
-				addr |= (bus_read(pc++) << 8);
-				break;
-			case ABX:
-				addr = bus_read(pc++);
-				addr |= (bus_read(pc++) << 8);
-				addr += x;
-				break;
-			case ABY:
-				addr = bus_read(pc++);
-				addr |= (bus_read(pc++) << 8);
-				addr += y;
-				break;
-			case REL: {
-				uint16_t offset = bus_read(pc++);
-				if (offset < 128)
-					addr = pc + offset;
-				else
-					addr = pc - (256 - offset);
-				break;
-			}
-			case IND:
-				addr = bus_read(pc++);
-				addr |= (bus_read(pc++) << 8);
-				addr = bus_read(addr);
-				break;
-			case INX: {
-				uint8_t base = bus_read(pc++) + x;
-
-				addr = bus_read(base) | (bus_read(base + 1) << 8);
-				break;
-			}
-			case INY: {
-				uint8_t base = bus_read(pc++);
-
-				addr = bus_read(base) | (bus_read(base + 1) << 8);
-				addr += y;
-				break;
-			}
-		}
-
-		(this->*instr.func)(addr);
-
-		#ifdef NES_DEBUG
-
-		uint16_t val = 0;
-
-		int args = std::min(pc - pc_start - 1, 2);
-		for (int i = 0; i < 2; ++i)
-		{
-			if (i < args)
-			{
-				uint8_t read = bus_read(pc_start + i + 1);
-				printf("%02X ", read);
-				val <<= 8;
-				val |= read;
-			}
+	uint16_t addr;
+	switch (instr.addr_mode) {
+		case IMPL:
+		case ACC: break;
+		case IMM: addr = pc++; break;
+		case ZPG: addr = bus_read(pc++); break;
+		case ZPX: addr = bus_read(pc++) + x; break;
+		case ZPY: addr = bus_read(pc++) + y; break;
+		case ABS:
+			addr = bus_read(pc++);
+			addr |= (bus_read(pc++) << 8);
+			break;
+		case ABX:
+			addr = bus_read(pc++);
+			addr |= (bus_read(pc++) << 8);
+			addr += x;
+			break;
+		case ABY:
+			addr = bus_read(pc++);
+			addr |= (bus_read(pc++) << 8);
+			addr += y;
+			break;
+		case REL: {
+			uint16_t offset = bus_read(pc++);
+			if (offset < 128)
+				addr = pc + offset;
 			else
-				printf("   ");
+				addr = pc - (256 - offset);
+			break;
 		}
+		case IND:
+			addr = bus_read(pc++);
+			addr |= (bus_read(pc++) << 8);
+			addr = bus_read(addr);
+			break;
+		case INX: {
+			uint8_t base = bus_read(pc++) + x;
 
-		// switch endianness for printing address
-		if (val > 0xff)
-		{
-			val = ((val & 0xff) << 8) | (val >> 8);
+			addr = bus_read(base) | (bus_read(base + 1) << 8);
+			break;
 		}
-	
-		printf(" %-14s", disas(op, val).c_str());
+		case INY: {
+			uint8_t base = bus_read(pc++);
 
-		printf("|%02X %02X %02X %02X|", a, x, y, sp);
-		std::cout << std::bitset<6>(((sr & 0b11000000) >> 2) | (sr & 0b1111)) << '\n';
-
-		#endif
-
-		cycles += instr.cycles;
-
-		if (ticks != -1)
-		{
-			if (countInstr) --ticks;
-			else ticks -= instr.cycles;
+			addr = bus_read(base) | (bus_read(base + 1) << 8);
+			addr += y;
+			break;
 		}
 	}
+
+	(this->*instr.func)(addr);
+
+	cycles += instr.cycles;
+}
+
+void CPU::exec_with_callback(std::function<void(CPU *)> callback)
+{
+	while (!halted)
+	{
+		callback(this);
+		step();
+	}
+}
+
+void CPU::exec()
+{
+	while (!halted) step();
 }
 
 void CPU::set_read(bus_read_t br) { bus_read = br; }
 void CPU::set_write(bus_write_t bw) { bus_write = bw; }
 
-std::string CPU::disas(uint8_t instr, uint16_t val)
+std::string CPU::disas(uint8_t instr, uint16_t args)
 {
 	CPU::Instr i = vec[instr];
 
@@ -372,50 +322,73 @@ std::string CPU::disas(uint8_t instr, uint16_t val)
 
 	out += i.name;
 
-	if (i.addr_mode == IMPL)
+	if (i.addr_mode == IMPL || i.addr_mode == ACC)
 		return out;
 
 	out += " ";
 
 	switch (i.addr_mode)
 	{
-		case ACC:
-			out += "A";
-			break;
 		case IMM:
-			out += "#$" + to_hex(val, 1);
+			out += "#$" + to_hex(args, 1);
 			break;
 		case ZPG:
-			out += "$" + to_hex(val, 1);
+			out += "$" + to_hex(args, 1) + " = " + to_hex(bus_read(args), 1);
 			break;
 		case ZPX:
-			out += "$" + to_hex(val, 1) + ",X";
+			out += "$" + to_hex(args, 1) + ",X @ " + to_hex(args + x, 1) + " = " + to_hex(bus_read(args + x), 1);
 			break;
 		case ZPY:
-			out += "$" + to_hex(val, 1) + ",Y";
+			out += "$" + to_hex(args, 1) + ",Y @ " + to_hex(args + y, 1) + " = " + to_hex(bus_read(args + y), 1);
 			break;
-		case INX:
-			out += "($" + to_hex(val, 1) + ",X)";
+		case IND: {
+			uint16_t ind = bus_read(args) | (bus_read(args + 1) << 8);
+
+			out += "($" + to_hex(args, 2) + ") = " + to_hex(ind, 2) + " = " + to_hex(bus_read(ind), 1);
 			break;
-		case INY:
-			out += "($" + to_hex(val, 1) + "),Y";
+		}
+		case INX: {
+			uint16_t ind = bus_read(args + x) | (bus_read(args + x + 1) << 8);
+
+			out += "($" + to_hex(args, 1) + ",X) @ " + to_hex(args + x, 1) + " = " + to_hex(ind, 2) + " = " + to_hex(bus_read(ind), 1);
 			break;
+		}
+		case INY: {
+			uint16_t ind = bus_read(args) | (bus_read(args + 1) << 8);
+
+			out += "($" + to_hex(args, 1) + "),Y = " + to_hex(ind, 2) + " @ " + to_hex(ind + y, 2) + " = " + to_hex(bus_read(ind + y), 1);
+			break;
+		}
 		case ABS:
-			out += "$" + to_hex(val, 2);
+			out += "$" + to_hex(args, 2);
 			break;
 		case ABX:
-			out += "$" + to_hex(val, 2) + ",X";
+			out += "$" + to_hex(args, 2) + ",X";
 			break;
 		case ABY:
-			out += "$" + to_hex(val, 2) + ",Y";
-			break;
-		case IND:
-			out += "($" + to_hex(val, 2) + ")";
+			out += "$" + to_hex(args, 2) + ",Y";
 			break;
 		case REL:
-			out += "$" + to_hex(val + pc, 2);
+			out += "$" + to_hex(args + pc, 2);
 			break;
 	}
 
 	return out;
+}
+
+int CPU::instr_bytes(AddrMode mode)
+{
+	switch (mode)
+	{
+		case ACC:
+		case IMPL:
+			return 1;
+		case ABS:
+		case ABX:
+		case ABY:
+		case IND:
+			return 3;
+		default:
+			return 2;
+	}
 }

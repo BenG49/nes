@@ -20,7 +20,7 @@ class CPU;
 
 typedef std::function<uint8_t(uint16_t)> bus_read_t;
 typedef std::function<void(uint16_t, uint8_t)> bus_write_t;
-typedef void (CPU::*func_t)(uint16_t);
+typedef void (CPU::*op_t)(uint16_t);
 
 enum AddrMode {
 	ACC, IMM, ZPG, ZPX, ZPY, ABS, ABX, ABY, IMPL, REL, IND, INX, INY
@@ -34,10 +34,10 @@ public:
 
 	uint16_t pc;
 
-	int cycles;
+	size_t cycles;
 	
 	struct Instr {
-		func_t func;
+		op_t func;
 		AddrMode addr_mode;
 	
 		uint8_t cycles;
@@ -45,10 +45,11 @@ public:
 		std::string name;
 	
 		Instr() : func(&CPU::nop), addr_mode(IMPL), cycles(2), name("NOP") {}
-		Instr(func_t f, AddrMode a, uint8_t cycles, const char *str) : func(f), addr_mode(a), cycles(cycles), name(str)
+		Instr(op_t f, AddrMode a, uint8_t cycles, const char *str) : func(f), addr_mode(a), cycles(cycles), name(str)
 		{
 			// substring is used because name is passed in as "&CPU::name", couldn't be bothered to fix
-			name = name.substr(6, name.length() - 6);
+			// opcode names are 3 characters long
+			name = name.substr(6, 9);
 			std::transform(name.begin(), name.end(), name.begin(), ::toupper);
 		}
 	};
@@ -62,6 +63,8 @@ public:
 private:
 	
 	void set_flags(uint16_t val, bool neg, bool zero, bool carry);
+
+
 
 	inline void push(uint8_t n);
 	inline void push_word(uint16_t n);
@@ -132,7 +135,9 @@ public:
 	void irq();
 	void reset();
 
-	void exec(int ticks, bool countInstr);
+	void step();
+	void exec_with_callback(std::function<void(CPU *)> callback);
+	void exec();
 
 	void set_read(bus_read_t bus_read);
 	void set_write(bus_write_t bus_write);
@@ -145,4 +150,5 @@ public:
 	static const uint16_t IRQH = 0xFFFF;
 
 	std::string disas(uint8_t instr, uint16_t val);
+	int instr_bytes(AddrMode mode);
 };

@@ -141,7 +141,7 @@ void cpu_test(MemState mem, std::function<bool(CPU*)> verify)
 
 	cpu.reset();
 
-	cpu.exec(-1, true);
+	cpu.exec();
 
 	printf(verify(&cpu) ? "\tTEST PASSED\n" : "\tTEST FAILED\n");
 }
