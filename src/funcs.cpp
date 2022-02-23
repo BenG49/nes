@@ -39,14 +39,14 @@ uint16_t CPU::pop_word()
 
 void CPU::adc(uint16_t addr)
 {
-	uint16_t n = bus_read(addr);
-	uint16_t out = (uint16_t)a + n + GET_BIT(sr, CARRY);
-
 	if (GET_BIT(sr, DEC))
 	{
 		puts("Unimplemented decimal mode add");
 		exit(1);
 	}
+
+	uint16_t n = bus_read(addr);
+	uint16_t out = (uint16_t)a + n + GET_BIT(sr, CARRY);
 
 	SET_BIT(sr, ~(a ^ n) & (a ^ out) & 0x80, OV);
 	set_flags(out, true, true, true);
@@ -186,7 +186,7 @@ void CPU::lsr_acc(uint16_t n)
 	SET_BIT(sr, a & 1, CARRY);
 	SET_BIT(sr, false, NEG);
 
-	set_flags(a >>= 1, true, true, false);
+	set_flags(a >>= 1, false, true, false);
 }
 
 void CPU::nop(uint16_t addr) {}
@@ -235,14 +235,15 @@ void CPU::rts(uint16_t addr) { pc = pop_word() + 1; }
 
 void CPU::sbc(uint16_t addr)
 {
-	uint16_t n = bus_read(addr);
-	uint16_t out = (uint16_t)a - n - GET_BIT(sr, CARRY);
-
 	if (GET_BIT(sr, DEC))
 	{
 		puts("Unimplemented decimal mode sub");
 		exit(1);
 	}
+
+	uint16_t n = bus_read(addr);
+	uint16_t out = (uint16_t)a + (n ^ 0xff);
+	out += GET_BIT(sr, CARRY);
 
 	SET_BIT(sr, ((a ^ out) & 0x80) & ((a ^ n) & 0x80), OV);
 	set_flags(out, true, true, true);

@@ -7,12 +7,13 @@
 #include <nes.hpp>
 #include <test.hpp>
 
+// https://benedicthenshaw.com/soft_render_sdl2.html
 void snake()
 {
 	// -- RAND -- //
 	std::random_device dev;
 	std::mt19937 rng(dev());
-	std::uniform_int_distribution<std::mt19937::result_type> dist(0, 0xff);
+	std::uniform_int_distribution<std::mt19937::result_type> dist(1, 0xf);
 
 	// -- SDL -- //
 	if (SDL_Init(SDL_INIT_EVERYTHING))
@@ -28,7 +29,7 @@ void snake()
 
 	SDL_Texture *screen_tex = SDL_CreateTexture(
 		renderer,
-		SDL_PIXELFORMAT_RGBA8888,
+		SDL_PIXELFORMAT_RGB888,
 		SDL_TEXTUREACCESS_STATIC,
 		32, 32
 	);
@@ -36,26 +37,26 @@ void snake()
 	uint32_t *pixels = (uint32_t *)malloc(32 * 32 * 4);
 
 	uint32_t colors[] = {
-		0x000000ff, // black
-		0xffffffff, // white
-		0xff0000ff, // red
-		0xffff00ff, // cyan
-		0x00ffffff, // magenta
-		0x00ff00ff, // green
-		0x0000ffff, // blue
-		0xff00ffff, // yellow
-		0xffee00ff, // orange
-		0x2a2aa5ff, // brown
-		0xee0000ff, // light red
-		0x404040ff, // gray
-		0x202020ff, // dark gray
-		0x00ee00ff, // light green
-		0x0000eeff, // light blue
-		0x606060ff, // light gray
+		0x000000, // black
+		0xffffff, // white
+		0x404040, // gray
+		0xff0000, // red
+		0x00ff00, // green
+		0x0000ff, // blue
+		0x00ffff, // magenta
+		0xff00ff, // yellow
+		0xffff00, // cyan
+		0x404040, // gray
+		0xff0000, // red
+		0x00ff00, // green
+		0x0000ff, // blue
+		0x00ffff, // magenta
+		0xff00ff, // yellow
+		0xffff00, // cyan
 	};
 
 	for (int i = 0; i < 32 * 32; ++i)
-		pixels[i] = colors[0];
+		pixels[i] = 0;
 
 	// -- CPU -- //
 	CPU cpu([](uint16_t n){ return 0; }, [](uint16_t a, uint8_t n) {});
@@ -68,18 +69,12 @@ void snake()
 	
 	ram[i] = 0xFF;
 
-	ram[CPU::RSTH] = MSB(0x600);
-	ram[CPU::RSTL] = LSB(0x600);
-
-	ram[CPU::IRQH] = MSB(0);
-	ram[CPU::IRQL] = LSB(0);
-	ram[CPU::NMIH] = MSB(0);
-	ram[CPU::NMIL] = LSB(0);
+	ram[CPU::RSTH] = 6;
+	ram[CPU::RSTL] = 0;
 
 	cpu.set_read([&](uint16_t addr) -> uint8_t {
-		if (addr == 0xfe) {
+		if (addr == 0xfe)
 			return (uint8_t)dist(rng);
-		}
 
 		return ram[addr];
 	});
@@ -135,80 +130,11 @@ void snake()
 	SDL_Quit();
 }
 
-void step(CPU *cpu)
-{
-	cpu->reset();
-
-	bool run = true;
-	while (run)
-	{
-		std::string s;
-		s = std::cin.get();
-
-		switch (s.at(0))
-		{
-			// exec instr
-			case 'n':
-			case '\n':
-				cpu->exec(1, true);
-				break;
-			// print zeropage
-			case 'z':
-				for (int i = 0; i < 0x100; ++i)
-				{
-					if (i % 0x10 == 0)
-						printf("\n\t");
-					printf("%02X ", cpu->bus_read(i));
-				}
-				printf("\n");
-				break;
-			case 'q':
-				run = false;
-				break;
-		}
-	}
-}
-
-/*
-0000: 00 02 02 04 00 00 00 00
-0008: 00 00 00 00 00 00 00 00
-0010: 11 04 10 04 0F 04 00 00
-*/
-
 // TODO: fix BEQ extra byte when jumping
 int main(int argc, const char *argv[])
 {
 	puts("addr instr     disass        |AC XR YR SP|nvdizc");
 	snake();
 
-	// cpu_test(MemState(readfile("snake.bin"), 0x600), [](CPU *cpu) -> bool { return true; });
-
 	// run_tests();
-
-	/*std::ifstream in(argv[1], std::ios::binary);
-
-	NES nes(in);
-
-	std::string s;
-	while (true)
-	{
-		printf("> ");
-		std::getline(std::cin, s);
-
-		switch (s[0]) {
-			case 'q': exit(0);
-			case 'x': {
-				uint16_t addr = std::strtol(s.c_str() + 2, nullptr, 16);
-				printf("0x%04X: %02X\n", addr, cpu.bus_read(addr));
-				break;
-			}
-			case 'r':
-				while (true)
-					cpu.exec(1, true);
-				break;
-			default:
-				cpu.exec(1, true);
-				break;
-		}
-	}*/
 }

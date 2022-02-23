@@ -17,35 +17,6 @@ void run_tests()
 	}), 0), [](CPU *cpu) -> bool {
 		return cpu->a == 0xc0 && cpu->x == 0xc1;
 	});
-
-	// OVERFLOW FLAG TESTS
-	cpu_test(MemState(std::vector<uint8_t>({
-		0xa9, 0x50,
-		0x69, 0x50
-	}), 0x400), [](CPU *cpu) -> bool {
-		return !GET_BIT(cpu->sr, CARRY) && GET_BIT(cpu->sr, OV);
-	});
-
-	cpu_test(MemState(std::vector<uint8_t>({
-		0xa9, 0x50,
-		0x69, 0x90
-	}), 0x400), [](CPU *cpu) -> bool {
-		return !GET_BIT(cpu->sr, CARRY) && !GET_BIT(cpu->sr, OV);
-	});
-
-	cpu_test(MemState(std::vector<uint8_t>({
-		0xa9, 0x50,
-		0x69, 0xd0
-	}), 0x400), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, CARRY) && !GET_BIT(cpu->sr, OV);
-	});
-
-	cpu_test(MemState(std::vector<uint8_t>({
-		0xa9, 0xd0,
-		0x69, 0x90
-	}), 0x400), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, CARRY) && GET_BIT(cpu->sr, OV);
-	});
 	
 	// ZPG, X test
 	cpu_test(MemState(std::vector<uint8_t>({
@@ -55,6 +26,82 @@ void run_tests()
 		0xb5, 0x10  // LDA $10, X
 	}), 0x400), [](CPU *cpu) -> bool {
 		return cpu->a == 0x69;
+	});
+
+	std::cout << "---- ADC tests -----\n";
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0x50, // LDA #$50
+		0x69, 0x50, // ADC #$50
+	}), 0x400), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 1 && GET_BIT(cpu->sr, CARRY) == 0;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0x50, // LDA #$50
+		0x69, 0x90, // ADC #$90
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 0;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0x50, // LDA #$50
+		0x69, 0xd0, // ADC #$d0
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 1;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0xd0, // LDA #$d0
+		0x69, 0x10, // ADC #$10
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 0;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0xd0, // LDA #$d0
+		0x69, 0x50, // ADC #$50
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 1;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0xd0, // LDA #$d0
+		0x69, 0x90, // ADC #$90
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 1 && GET_BIT(cpu->sr, CARRY) == 1;
+	});
+
+	std::cout << "---- SBC tests ----\n";
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0x50, // LDA #$50
+		0xe9, 0xb0, // SBC #$b0
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 1 && GET_BIT(cpu->sr, CARRY) == 0;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0x50, // LDA #$50
+		0xe9, 0x70, // SBC #$70
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 0;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0x50, // LDA #$50
+		0xe9, 0x30, // SBC #$30
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 1;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0xd0, // LDA #$d0
+		0xe9, 0xf0, // SBC #$f0
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 0;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0xd0, // LDA #$d0
+		0xe9, 0xb0, // SBC #$b0
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 1;
+	});
+	cpu_test(MemState(std::vector<uint8_t>({
+		0xa9, 0xd0, // LDA #$d0
+		0xe9, 0x70, // SBC #$70
+	}), 0), [](CPU *cpu) -> bool {
+		return GET_BIT(cpu->sr, OV) == 1 && GET_BIT(cpu->sr, CARRY) == 1;
 	});
 
 	// BRK test
@@ -77,6 +124,7 @@ void cpu_test(MemState mem, std::function<bool(CPU*)> verify)
 
 	int i = mem.prog_addr;
 	for (char c : mem.binfile) ram[i++] = c;
+	ram[i] = 0x00;
 	
 	ram[CPU::RSTH] = MSB(mem.prog_addr);
 	ram[CPU::RSTL] = LSB(mem.prog_addr);
