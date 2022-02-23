@@ -66,8 +66,6 @@ void snake()
 	std::vector<uint8_t> binfile = readfile("snake.bin");
 	int i = 0x600;
 	for (uint8_t c : binfile) ram[i++] = c;
-	
-	ram[i] = 0xFF;
 
 	ram[CPU::RSTH] = 6;
 	ram[CPU::RSTL] = 0;

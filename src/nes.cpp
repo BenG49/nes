@@ -1,68 +1,54 @@
 #include <nes.hpp>
 
+#include <functional>
 #include <iostream>
 
-#define HDR_BYTE(byte, err) \
-	in >> inb;              \
-	if (inb != byte)        \
-		read_err(#err);
-
-// TODO: add mapper or sth
-
-NES::NES(std::ifstream &ines)
-	: cpu([=](uint16_t addr) -> uint8_t {
-		// ram and mirrors
-		if (addr < 0x2000)
-			return ram[addr & RAM_MASK];
-		// cartridge
-		else if (addr > 0x4020)
-			return rom[addr - 0x4020];
-		else
-		{
-			printf("Read to unsupported location: 0x%04X\n", addr);
-			exit(1);
-		}
-	}, [&](uint16_t addr, uint8_t n) -> void {
-		// printf("[0x%04X] = 0x%02X\n", addr, n);
-		if (addr < 0x2000)
-			ram[addr & RAM_MASK] = n;
-		// cartridge
-		else if (addr > 0x4020)
-			rom[addr - 0x4020] = n;
-		else
-		{
-			printf("Write to unsupported location: 0x%04X\n", addr);
-			exit(1);
-		}
-	})
+NES::NES(const ROM &rom)
+	: cpu([=](uint16_t addr) -> uint8_t { this->read(addr); },
+	      [&](uint16_t addr, uint8_t data) { this->write(addr, data); })
+	, rom(rom)
 {
-	read_ines(ines);
 }
 
-void NES::read_err(const char *err) const
+uint8_t NES::read(uint16_t addr)
 {
-	std::cerr << err << '\n';
-	exit(1);
+	// ram and ram mirrors
+	if (addr < 0x2000)
+		return ram[addr & RAM_MASK];
+	// prg rom space
+	else if (addr >= 0x8000)
+		return read_prg_rom(addr);
+	else
+	{
+		printf("Read to unsupported location: 0x%04X\n", addr);
+		exit(1);
+	}
 }
 
-void NES::read_ines(std::ifstream &in)
+uint8_t NES::read_prg_rom(uint16_t addr)
 {
-	uint8_t inb, prgrom_16k_sz, chrrom_8k_sz;
+	addr -= 0x8000;
 
-	HDR_BYTE('N', Invalid ines header!)
-	HDR_BYTE('E', Invalid ines header!)
-	HDR_BYTE('S', Invalid ines header!)
-	HDR_BYTE(0x1A, Invalid ines header!)
+	if (rom.prg_rom.size() == 0x4000)
+		return rom.prg_rom[addr % 0x4000];
+	
+	return rom.prg_rom[addr];
+}
 
-	in >> prgrom_16k_sz;
-	in >> chrrom_8k_sz;
-
-	in >> inb; // flags 6
-	in >> inb; // flags 7
-	in >> inb; // flags 8
-	in >> inb; // flags 9
-	in >> inb; // flags 10
-
-	// read prg rom
-	for (int i = prgrom_16k_sz * 0x4000 - 1; i >= 0; --i) in >> rom[i];
+void NES::write(uint16_t addr, uint8_t data)
+{
+	// ram and ram mirrors
+	if (addr < 0x2000)
+		ram[addr & RAM_MASK] = data;
+	// prg rom space
+	else if (addr >= 0x8000)
+	{
+		perror("Illegal write to cartridge!");
+		exit(1);
+	}
+	else
+	{
+		printf("Write to unsupported location: 0x%04X\n", addr);
+		exit(1);
+	}
 }

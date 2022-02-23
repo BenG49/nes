@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cpu.hpp>
+#include <rom.hpp>
 
 #include <fstream>
 
@@ -9,11 +10,9 @@ private:
 	static const int RAM_SIZE = 0x800;
 	static const int RAM_MASK = 0x7FF;
 
-	void read_err(const char *err) const;
-	void read_ines(std::ifstream &in);
-
 public:
 	CPU cpu;
+	ROM rom;
 
 	// 0x0000-0x07FF
 	uint8_t ram[RAM_SIZE];
@@ -23,8 +22,8 @@ public:
 	// 0x1000-0x17FF
 	// 0x1800-0x1FFF
 
-	// 0x2000-0x2007
 	// ppu regs
+	// 0x2000-0x2007
 
 	// mirror of ppu regs, repeat every 8 bytes
 	// 0x2008-0x3FFF
@@ -37,7 +36,11 @@ public:
 
 	// cartridge
 	// 0x4020-0xFFFF
-	uint8_t rom[0xBFDF];
 
-	NES(std::ifstream &ines);
+	uint8_t read(uint16_t addr);
+	uint8_t read_prg_rom(uint16_t addr);
+
+	void write(uint16_t addr, uint8_t data);
+
+	NES(const ROM &rom);
 };
