@@ -128,7 +128,6 @@ void snake()
 // TODO: add masswerk virtual 6502 trace style
 int main(int argc, const char *argv[])
 {
-	//C000  4C F5 C5  JMP $C5F5                       A:00 X:00 Y:00 P:24 SP:FD
 	std::function<void(CPU *)> test_trace_f = [](CPU *cpu) {
 		uint8_t op = cpu->bus_read(cpu->pc);
 		CPU::Instr instr = cpu->vec[op];
@@ -136,7 +135,7 @@ int main(int argc, const char *argv[])
 		printf("%04X  ", cpu->pc);
 
 		int bytes = cpu->instr_bytes(instr.addr_mode);
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < 3; ++i)
 		{
 			if (i < bytes)
 				printf("%02X ", cpu->bus_read(cpu->pc + i));
@@ -150,20 +149,12 @@ int main(int argc, const char *argv[])
 		else if (bytes == 3)
 			args = cpu->bus_read(cpu->pc + 1) | (cpu->bus_read(cpu->pc + 2) << 8);
 
-		printf(" %-32s A:%02X X:%02X Y:%02X P:%02X SP:%02X", cpu->disas(op, args).c_str(), cpu->a, cpu->x, cpu->y, cpu->sr, cpu->sp);
+		printf(" %-31s A:%02X X:%02X Y:%02X P:%02X SP:%02X", cpu->disas(op, args).c_str(), cpu->a, cpu->x, cpu->y, cpu->sr, cpu->sp);
 
 		puts("");
 	};
 
 	NES nes(readfile("nestest.nes"));
-	
-	/*for (int i = 0; i < 0x100; ++i)
-	{
-		if (i % 0x10 == 0) printf("\n");
-
-		printf("%02X ", nes.ram[i]);
-	}
-	printf("\n");*/
 
 	nes.cpu.pc = 0xC000;
 	nes.cpu.exec_with_callback(test_trace_f);

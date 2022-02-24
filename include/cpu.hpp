@@ -29,7 +29,7 @@ enum AddrMode {
 class CPU {
 public:
 	// NOTE: stack pointer = 0x100 + sp, grows downward
-	// NV-BDIZC
+	// NV--DIZC
 	uint8_t a, x, y, sp, sr;
 
 	uint16_t pc;
@@ -49,7 +49,7 @@ public:
 		{
 			// substring is used because name is passed in as "&CPU::name", couldn't be bothered to fix
 			// opcode names are 3 characters long
-			name = name.substr(6, 9);
+			name = name.substr(6, 3);
 			std::transform(name.begin(), name.end(), name.begin(), ::toupper);
 		}
 	};
@@ -66,10 +66,10 @@ private:
 
 
 
-	inline void push(uint8_t n);
-	inline void push_word(uint16_t n);
-	inline uint8_t pop();
-	inline uint16_t pop_word();
+	void push(uint8_t n);
+	void push_word(uint16_t n);
+	uint8_t pop();
+	uint16_t pop_word();
 
 	void adc(uint16_t addr);
 	void AND(uint16_t addr);

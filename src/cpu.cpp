@@ -41,6 +41,7 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0x90, &CPU::bcc, REL, 2)
 	OP(0xB0, &CPU::bcs, REL, 2)
 	OP(0xF0, &CPU::beq, REL, 2)
+	OP(0x30, &CPU::bmi, REL, 2)
 
 	OP(0x24, &CPU::bit, ZPG, 3)
 	OP(0x2C, &CPU::bit, ABS, 3)
@@ -119,15 +120,15 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 
 	OP(0xA0, &CPU::ldy, IMM, 2)
 	OP(0xA4, &CPU::ldy, ZPG, 3)
-	OP(0xB4, &CPU::ldy, ZPY, 4)
+	OP(0xB4, &CPU::ldy, ZPX, 4)
 	OP(0xAC, &CPU::ldy, ABS, 4)
-	OP(0xBC, &CPU::ldy, ABY, 4)
+	OP(0xBC, &CPU::ldy, ABX, 4)
 
 	OP(0x4A, &CPU::lsr_acc, ACC, 2)
 	OP(0x46, &CPU::lsr, ZPG, 5)
-	OP(0x56, &CPU::lsr, ZPY, 6)
-	OP(0x43, &CPU::lsr, ABS, 6)
-	OP(0x53, &CPU::lsr, ABY, 7)
+	OP(0x56, &CPU::lsr, ZPX, 6)
+	OP(0x4E, &CPU::lsr, ABS, 6)
+	OP(0x5E, &CPU::lsr, ABX, 7)
 
 	OP(0x09, &CPU::ora, IMM, 2)
 	OP(0x05, &CPU::ora, ZPG, 3)
@@ -145,15 +146,15 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 
 	OP(0x2A, &CPU::rol_acc, ACC, 2)
 	OP(0x26, &CPU::rol, ZPG, 5)
-	OP(0x36, &CPU::rol, ZPY, 6)
-	OP(0x23, &CPU::rol, ABS, 6)
-	OP(0x33, &CPU::rol, ABY, 7)
+	OP(0x36, &CPU::rol, ZPX, 6)
+	OP(0x2E, &CPU::rol, ABS, 6)
+	OP(0x3E, &CPU::rol, ABX, 7)
 
 	OP(0x6A, &CPU::ror_acc, ACC, 2)
 	OP(0x66, &CPU::ror, ZPG, 5)
-	OP(0x76, &CPU::ror, ZPY, 6)
-	OP(0x63, &CPU::ror, ABS, 6)
-	OP(0x73, &CPU::ror, ABY, 7)
+	OP(0x76, &CPU::ror, ZPX, 6)
+	OP(0x6E, &CPU::ror, ABS, 6)
+	OP(0x7E, &CPU::ror, ABX, 7)
 
 	OP(0x40, &CPU::rti, IMPL, 6)
 	OP(0x60, &CPU::rts, IMPL, 6)
@@ -205,7 +206,7 @@ void CPU::nmi()
 
 	push_word(pc);
 
-	push(sr);
+	push(sr | 0b100000);
 
 	SET_BIT(sr, true, INT);
 
@@ -221,7 +222,7 @@ void CPU::irq()
 
 		push_word(pc);
 
-		push(sr);
+		push(sr | 0b100000);
 
 		SET_BIT(sr, true, INT);
 
@@ -232,10 +233,11 @@ void CPU::irq()
 void CPU::reset()
 {
 	a = y = x = 0;
+	sr = 0b00100100;
 
 	JMP_BUS(RSTL)
 
-	sp = 0xFF;
+	sp = 0xFD;
 }
 void CPU::step()
 {
@@ -248,8 +250,8 @@ void CPU::step()
 		case ACC: break;
 		case IMM: addr = pc++; break;
 		case ZPG: addr = bus_read(pc++); break;
-		case ZPX: addr = bus_read(pc++) + x; break;
-		case ZPY: addr = bus_read(pc++) + y; break;
+		case ZPX: addr = (bus_read(pc++) + x) & 0xff; break;
+		case ZPY: addr = (bus_read(pc++) + y) & 0xff; break;
 		case ABS:
 			addr = bus_read(pc++);
 			addr |= (bus_read(pc++) << 8);
@@ -272,21 +274,25 @@ void CPU::step()
 				addr = pc - (256 - offset);
 			break;
 		}
-		case IND:
-			addr = bus_read(pc++);
-			addr |= (bus_read(pc++) << 8);
-			addr = bus_read(addr);
+		case IND: {
+			uint16_t base = bus_read(pc++);
+			base |= bus_read(pc++) << 8;
+
+			addr = bus_read(base);
+			addr |= bus_read((base & 0xff00) | ((base + 1) & 0xff)) << 8;
+
 			break;
+		}
 		case INX: {
 			uint8_t base = bus_read(pc++) + x;
 
-			addr = bus_read(base) | (bus_read(base + 1) << 8);
+			addr = bus_read(base) | (bus_read((base + 1) & 0xff) << 8);
 			break;
 		}
 		case INY: {
 			uint8_t base = bus_read(pc++);
 
-			addr = bus_read(base) | (bus_read(base + 1) << 8);
+			addr = bus_read(base) | (bus_read((base + 1) & 0xff) << 8);
 			addr += y;
 			break;
 		}
@@ -322,13 +328,16 @@ std::string CPU::disas(uint8_t instr, uint16_t args)
 
 	out += i.name;
 
-	if (i.addr_mode == IMPL || i.addr_mode == ACC)
+	if (i.addr_mode == IMPL)
 		return out;
 
 	out += " ";
 
 	switch (i.addr_mode)
 	{
+		case ACC:
+			out += "A";
+			break;
 		case IMM:
 			out += "#$" + to_hex(args, 1);
 			break;
@@ -336,40 +345,49 @@ std::string CPU::disas(uint8_t instr, uint16_t args)
 			out += "$" + to_hex(args, 1) + " = " + to_hex(bus_read(args), 1);
 			break;
 		case ZPX:
-			out += "$" + to_hex(args, 1) + ",X @ " + to_hex(args + x, 1) + " = " + to_hex(bus_read(args + x), 1);
+			out += "$" + to_hex(args, 1) + ",X @ " + to_hex((args + x) & 0xff, 1) + " = " + to_hex(bus_read((args + x) & 0xff), 1);
 			break;
 		case ZPY:
-			out += "$" + to_hex(args, 1) + ",Y @ " + to_hex(args + y, 1) + " = " + to_hex(bus_read(args + y), 1);
+			out += "$" + to_hex(args, 1) + ",Y @ " + to_hex((args + y) & 0xff, 1) + " = " + to_hex(bus_read((args + y) & 0xff), 1);
 			break;
 		case IND: {
-			uint16_t ind = bus_read(args) | (bus_read(args + 1) << 8);
+			uint16_t ind = bus_read(args) | (bus_read((args & 0xff00) | ((args + 1) & 0xff)) << 8);
 
-			out += "($" + to_hex(args, 2) + ") = " + to_hex(ind, 2) + " = " + to_hex(bus_read(ind), 1);
+			out += "($" + to_hex(args, 2) + ") = " + to_hex(ind, 2);
+
+			// all indirect jumps don't print value at jump addr
+			if (i.name[0] != 'J')
+				out += " = " + to_hex(bus_read(ind), 1);
 			break;
 		}
 		case INX: {
-			uint16_t ind = bus_read(args + x) | (bus_read(args + x + 1) << 8);
+			uint16_t ind = bus_read((args + x) & 0xff) | (bus_read((args + x + 1) & 0xff) << 8);
 
-			out += "($" + to_hex(args, 1) + ",X) @ " + to_hex(args + x, 1) + " = " + to_hex(ind, 2) + " = " + to_hex(bus_read(ind), 1);
+			out += "($" + to_hex(args, 1) + ",X) @ " + to_hex((args + x) & 0xff, 1) + " = " + to_hex(ind, 2) + " = " + to_hex(bus_read(ind), 1);
 			break;
 		}
 		case INY: {
-			uint16_t ind = bus_read(args) | (bus_read(args + 1) << 8);
+			uint16_t ind = bus_read(args) | (bus_read((args + 1) & 0xff) << 8);
 
 			out += "($" + to_hex(args, 1) + "),Y = " + to_hex(ind, 2) + " @ " + to_hex(ind + y, 2) + " = " + to_hex(bus_read(ind + y), 1);
 			break;
 		}
 		case ABS:
 			out += "$" + to_hex(args, 2);
+
+			// all absolute jumps don't print value at jump addr
+			if (i.name[0] != 'J')
+				out += " = " + to_hex(bus_read(args), 1);
+			
 			break;
 		case ABX:
-			out += "$" + to_hex(args, 2) + ",X";
+			out += "$" + to_hex(args, 2) + ",X @ " + to_hex(args + x, 2) + " = " + to_hex(bus_read(args + x), 1);
 			break;
 		case ABY:
-			out += "$" + to_hex(args, 2) + ",Y";
+			out += "$" + to_hex(args, 2) + ",Y @ " + to_hex(args + y, 2) + " = " + to_hex(bus_read(args + y), 1);
 			break;
 		case REL:
-			out += "$" + to_hex(args + pc, 2);
+			out += "$" + to_hex(args + pc + 2, 2);
 			break;
 	}
 

@@ -11,6 +11,7 @@ Resources:
 - https://github.com/gianlucag/mos6502
 - https://stackoverflow.com/questions/52017657/6502-emulator-testing-nestest
 - https://bugzmanov.github.io/nes_ebook/
+- https://wiki.nesdev.org/w/index.php/Status_flags#The_B_flag
 
 NES:
 - https://wiki.nesdev.org/w/index.php/Emulator_tests

@@ -6,7 +6,7 @@
 	if (flag) pc = addr;
 
 #define TR(func, from, to) \
-	void CPU::func(uint16_t addr) { to = from; }
+	void CPU::func(uint16_t addr) { set_flags(to = from, true, true, false); }
 
 // ----------- //
 
@@ -39,11 +39,11 @@ uint16_t CPU::pop_word()
 
 void CPU::adc(uint16_t addr)
 {
-	if (GET_BIT(sr, DEC))
+	/*if (GET_BIT(sr, DEC))
 	{
 		puts("Unimplemented decimal mode add");
 		exit(1);
-	}
+	}*/
 
 	uint16_t n = bus_read(addr);
 	uint16_t out = (uint16_t)a + n + GET_BIT(sr, CARRY);
@@ -72,7 +72,14 @@ void CPU::asl(uint16_t addr)
 	bus_write(addr, LSB(out));
 }
 
-void CPU::asl_acc(uint16_t n) { set_flags(a <<= 1, true, true, true); }
+void CPU::asl_acc(uint16_t n)
+{
+	uint16_t out = (uint16_t)a << 1;
+
+	a = out & 0xff;
+	
+	set_flags(out, true, true, true);
+}
 
 void CPU::bcc(uint16_t addr) { BR(!GET_BIT(sr, CARRY)) }
 void CPU::bcs(uint16_t addr) { BR(GET_BIT(sr, CARRY)) }
@@ -81,9 +88,10 @@ void CPU::beq(uint16_t addr) { BR(GET_BIT(sr, ZERO)) }
 void CPU::bit(uint16_t addr)
 {
 	uint8_t n = bus_read(addr);
-	// lol i have no idea why this is useful
-	SET_BIT(sr, GET_BIT(n, 7), NEG);
-	SET_BIT(sr, GET_BIT(n, 6), OV);
+
+	// transfer bits 6 and 7
+	sr &= 0b00111111;
+	sr |= n & 0b11000000;
 
 	SET_BIT(sr, !(n & a), ZERO);
 }
@@ -96,7 +104,7 @@ void CPU::brk(uint16_t addr)
 {
 	halted = true;
 	/*push_word(pc);
-	push(sr | BRK);
+	push(sr | 0b110000);
 	SET_BIT(sr, true, INT);
 
 	JMP_BUS(IRQL)*/
@@ -113,7 +121,7 @@ void CPU::clv(uint16_t addr) { SET_BIT(sr, false, OV); }
 void CPU::cmp(uint16_t addr)
 {
 	uint16_t n = bus_read(addr);
-	uint16_t out = (uint16_t)a - n;
+	uint16_t out = (uint16_t)a + (n ^ 0xff) + 1;
 
 	set_flags(out, true, true, true);
 }
@@ -121,7 +129,7 @@ void CPU::cmp(uint16_t addr)
 void CPU::cpx(uint16_t addr)
 {
 	uint16_t n = bus_read(addr);
-	uint16_t out = (uint16_t)x - n;
+	uint16_t out = (uint16_t)x + (n ^ 0xff) + 1;
 
 	set_flags(out, true, true, true);
 }
@@ -129,7 +137,7 @@ void CPU::cpx(uint16_t addr)
 void CPU::cpy(uint16_t addr)
 {
 	uint16_t n = bus_read(addr);
-	uint16_t out = (uint16_t)y - n;
+	uint16_t out = (uint16_t)y + (n ^ 0xff) + 1;
 
 	set_flags(out, true, true, true);
 }
@@ -194,28 +202,39 @@ void CPU::nop(uint16_t addr) {}
 void CPU::ora(uint16_t addr) { set_flags(a |= bus_read(addr), true, true, false); }
 
 void CPU::pha(uint16_t addr) { push(a); }
-void CPU::php(uint16_t addr) { push(sr); }
+void CPU::php(uint16_t addr) { push(sr | 0b110000); }
 void CPU::pla(uint16_t addr) { set_flags(a = pop(), true, true, false); }
-void CPU::plp(uint16_t addr) { sr = pop() | CONST; }
+void CPU::plp(uint16_t addr)
+{
+	sr &= 0b00110000;
+	sr |= pop() & 0b11001111;
+}
 
 void CPU::rol(uint16_t addr)
 {
-	uint16_t out = (uint16_t)bus_read(addr) << 1;
-	out |= GET_BIT(sr, CARRY);
+	uint16_t out = ((uint16_t)bus_read(addr) << 1) | GET_BIT(sr, CARRY);
 
 	set_flags(out, true, true, true);
 
 	bus_write(addr, LSB(out));
 }
 
-void CPU::rol_acc(uint16_t n) { set_flags((a << 1) | GET_BIT(sr, CARRY), true, true, true); }
+void CPU::rol_acc(uint16_t n)
+{
+	uint16_t out = ((uint16_t)a << 1) | GET_BIT(sr, CARRY);
+	
+	a = out & 0xff;
+
+	set_flags(out, true, true, true);
+}
 
 void CPU::ror(uint16_t addr)
 {
 	uint16_t n = bus_read(addr);
-	SET_BIT(sr, n & 1, CARRY);
+	bool set_carry = (n & 1) != 0;
 	uint16_t out = n >> 1;
 	SET_BIT(out, GET_BIT(sr, CARRY), 7);
+	SET_BIT(sr, set_carry, CARRY);
 
 	set_flags(out, true, true, false);
 
@@ -224,22 +243,29 @@ void CPU::ror(uint16_t addr)
 
 void CPU::ror_acc(uint16_t n)
 {
-	SET_BIT(sr, a & 1, CARRY);
+	bool set_carry = (a & 1) != 0;
 	a >>= 1;
 	SET_BIT(a, GET_BIT(sr, CARRY), 7);
+	SET_BIT(sr, set_carry, CARRY);
+
 	set_flags(a, true, true, false);
 }
 
-void CPU::rti(uint16_t addr) { sr = pop(); pc = pop_word(); }
+void CPU::rti(uint16_t addr)
+{
+	sr = pop() | 0b100000;
+	pc = pop_word();
+}
+
 void CPU::rts(uint16_t addr) { pc = pop_word() + 1; }
 
 void CPU::sbc(uint16_t addr)
 {
-	if (GET_BIT(sr, DEC))
+	/*if (GET_BIT(sr, DEC))
 	{
 		puts("Unimplemented decimal mode sub");
 		exit(1);
-	}
+	}*/
 
 	uint16_t n = bus_read(addr);
 	uint16_t out = (uint16_t)a + (n ^ 0xff);
@@ -263,5 +289,5 @@ TR(tax, a, x)
 TR(tay, a, y)
 TR(tsx, sp, x)
 TR(txa, x, a)
-TR(txs, x, sp)
+void CPU::txs(uint16_t addr) { sp = x; }
 TR(tya, y, a)
