@@ -149,7 +149,12 @@ int main(int argc, const char *argv[])
 		else if (bytes == 3)
 			args = cpu->bus_read(cpu->pc + 1) | (cpu->bus_read(cpu->pc + 2) << 8);
 
-		printf(" %-31s A:%02X X:%02X Y:%02X P:%02X SP:%02X", cpu->disas(op, args).c_str(), cpu->a, cpu->x, cpu->y, cpu->sr, cpu->sp);
+		if (instr.valid)
+			printf(" ");
+		else
+			printf("*");
+
+		printf("%-31s A:%02X X:%02X Y:%02X P:%02X SP:%02X", cpu->disas(op, args).c_str(), cpu->a, cpu->x, cpu->y, cpu->sr, cpu->sp);
 
 		puts("");
 	};

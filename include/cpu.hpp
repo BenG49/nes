@@ -43,9 +43,12 @@ public:
 		uint8_t cycles;
 
 		std::string name;
+
+		bool valid;
 	
-		Instr() : func(&CPU::nop), addr_mode(IMPL), cycles(2), name("NOP") {}
-		Instr(op_t f, AddrMode a, uint8_t cycles, const char *str) : func(f), addr_mode(a), cycles(cycles), name(str)
+		Instr() : func(&CPU::nop), addr_mode(IMPL), cycles(2), name("NOP"), valid(true) {}
+		Instr(op_t f, AddrMode a, uint8_t cycles, const char *str, bool valid)
+			: func(f), addr_mode(a), cycles(cycles), name(str), valid(valid)
 		{
 			// substring is used because name is passed in as "&CPU::name", couldn't be bothered to fix
 			// opcode names are 3 characters long
@@ -127,6 +130,25 @@ private:
 	void txa(uint16_t addr);
 	void txs(uint16_t addr);
 	void tya(uint16_t addr);
+
+	void alr(uint16_t addr);
+	void anc(uint16_t addr);
+	void arr(uint16_t addr);
+	void dcp(uint16_t addr);
+	void isb(uint16_t addr);
+	void las(uint16_t addr);
+	void lax(uint16_t addr);
+	void lxa(uint16_t addr);
+	void rla(uint16_t addr);
+	void rra(uint16_t addr);
+	void sax(uint16_t addr);
+	void sbx(uint16_t addr);
+	void sha(uint16_t addr);
+	void shx(uint16_t addr);
+	void shy(uint16_t addr);
+	void slo(uint16_t addr);
+	void sre(uint16_t addr);
+	void tas(uint16_t addr);
 
 public:
 	CPU(bus_read_t bus_read, bus_write_t bus_write);

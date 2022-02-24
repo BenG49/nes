@@ -291,3 +291,29 @@ TR(tsx, sp, x)
 TR(txa, x, a)
 void CPU::txs(uint16_t addr) { sp = x; }
 TR(tya, y, a)
+
+// --- ILLEGAL OPCODES --- //
+
+void CPU::alr(uint16_t addr) { AND(addr); lsr_acc(addr); }
+void CPU::anc(uint16_t addr) { set_flags(a &= bus_read(addr), true, true, true); }
+void CPU::arr(uint16_t addr) {}
+void CPU::dcp(uint16_t addr) { dec(addr); cmp(addr); }
+void CPU::isb(uint16_t addr) { inc(addr); sbc(addr); }
+void CPU::las(uint16_t addr) {}
+
+void CPU::lax(uint16_t addr)
+{
+	set_flags(a = x = bus_read(addr), true, true, false);
+}
+
+void CPU::lxa(uint16_t addr) {}
+void CPU::rla(uint16_t addr) { rol(addr); AND(addr); }
+void CPU::rra(uint16_t addr) { ror(addr); adc(addr); }
+void CPU::sax(uint16_t addr) { bus_write(addr, a & x); }
+void CPU::sbx(uint16_t addr) {}
+void CPU::sha(uint16_t addr) {}
+void CPU::shx(uint16_t addr) {}
+void CPU::shy(uint16_t addr) {}
+void CPU::slo(uint16_t addr) { asl(addr); ora(addr); }
+void CPU::sre(uint16_t addr) { lsr(addr); eor(addr); }
+void CPU::tas(uint16_t addr) {}

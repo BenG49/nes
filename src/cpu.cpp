@@ -7,7 +7,10 @@
 #include <bitset>
 
 #define OP(opcode, func, addr, instrs) \
-	vec[opcode] = Instr(func, addr, instrs, #func);
+	vec[opcode] = Instr(func, addr, instrs, #func, true);
+
+#define ILL_OP(opcode, func, addr, instrs) \
+	vec[opcode] = Instr(func, addr, instrs, #func, false);
 
 CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	: a(), x(), y(), sp(), pc(), cycles(), bus_read(bus_read), bus_write(bus_write), halted(false)
@@ -197,6 +200,119 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0x8A, &CPU::txa, IMPL, 2)
 	OP(0x9A, &CPU::txs, IMPL, 2)
 	OP(0x98, &CPU::tya, IMPL, 2)
+	
+	// --- ILLEGAL OPCODES --- //
+	ILL_OP(0x1A, &CPU::nop, IMPL, 2)
+	ILL_OP(0x3A, &CPU::nop, IMPL, 2)
+	ILL_OP(0x5A, &CPU::nop, IMPL, 2)
+	ILL_OP(0x7A, &CPU::nop, IMPL, 2)
+	ILL_OP(0xDA, &CPU::nop, IMPL, 2)
+	ILL_OP(0xFA, &CPU::nop, IMPL, 2)
+	ILL_OP(0x80, &CPU::nop, IMM, 2)
+	ILL_OP(0x82, &CPU::nop, IMM, 2)
+	ILL_OP(0x89, &CPU::nop, IMM, 2)
+	ILL_OP(0xC2, &CPU::nop, IMM, 2)
+	ILL_OP(0xE2, &CPU::nop, IMM, 2)
+	ILL_OP(0x04, &CPU::nop, ZPG, 3)
+	ILL_OP(0x44, &CPU::nop, ZPG, 3)
+	ILL_OP(0x64, &CPU::nop, ZPG, 3)
+	ILL_OP(0x14, &CPU::nop, ZPX, 4)
+	ILL_OP(0x34, &CPU::nop, ZPX, 4)
+	ILL_OP(0x54, &CPU::nop, ZPX, 4)
+	ILL_OP(0x74, &CPU::nop, ZPX, 4)
+	ILL_OP(0xD4, &CPU::nop, ZPX, 4)
+	ILL_OP(0xF4, &CPU::nop, ZPX, 4)
+	ILL_OP(0x0C, &CPU::nop, ABS, 4)
+	ILL_OP(0x1C, &CPU::nop, ABX, 4)
+	ILL_OP(0x3C, &CPU::nop, ABX, 4)
+	ILL_OP(0x5C, &CPU::nop, ABX, 4)
+	ILL_OP(0x7C, &CPU::nop, ABX, 4)
+	ILL_OP(0xDC, &CPU::nop, ABX, 4)
+	ILL_OP(0xFC, &CPU::nop, ABX, 4)
+
+	ILL_OP(0x4B, &CPU::alr, IMM, 2)
+
+	ILL_OP(0x0B, &CPU::anc, IMM, 2)
+	ILL_OP(0x2B, &CPU::anc, IMM, 2)
+
+	ILL_OP(0x6B, &CPU::arr, IMM, 2)
+
+	ILL_OP(0xC7, &CPU::dcp, ZPG, 5)
+	ILL_OP(0xD7, &CPU::dcp, ZPX, 6)
+	ILL_OP(0xCF, &CPU::dcp, ABS, 6)
+	ILL_OP(0xDF, &CPU::dcp, ABX, 7)
+	ILL_OP(0xDB, &CPU::dcp, ABY, 7)
+	ILL_OP(0xC3, &CPU::dcp, INX, 8)
+	ILL_OP(0xD3, &CPU::dcp, INY, 8)
+
+	ILL_OP(0xE7, &CPU::isb, ZPG, 5)
+	ILL_OP(0xF7, &CPU::isb, ZPX, 6)
+	ILL_OP(0xEF, &CPU::isb, ABS, 6)
+	ILL_OP(0xFF, &CPU::isb, ABX, 7)
+	ILL_OP(0xFB, &CPU::isb, ABY, 7)
+	ILL_OP(0xE3, &CPU::isb, INX, 8)
+	ILL_OP(0xF3, &CPU::isb, INY, 4)
+
+	ILL_OP(0xBB, &CPU::las, ABY, 4);
+
+	ILL_OP(0xA7, &CPU::lax, ZPG, 3)
+	ILL_OP(0xB7, &CPU::lax, ZPY, 4)
+	ILL_OP(0xAF, &CPU::lax, ABS, 4)
+	ILL_OP(0xBF, &CPU::lax, ABY, 4)
+	ILL_OP(0xA3, &CPU::lax, INX, 6)
+	ILL_OP(0xB3, &CPU::lax, INY, 5)
+
+	ILL_OP(0xAB, &CPU::lxa, IMM, 2)
+
+	ILL_OP(0x27, &CPU::rla, ZPG, 5)
+	ILL_OP(0x37, &CPU::rla, ZPX, 6)
+	ILL_OP(0x2F, &CPU::rla, ABS, 6)
+	ILL_OP(0x3F, &CPU::rla, ABX, 7)
+	ILL_OP(0x3B, &CPU::rla, ABY, 7)
+	ILL_OP(0x23, &CPU::rla, INX, 8)
+	ILL_OP(0x33, &CPU::rla, INY, 8)
+
+	ILL_OP(0x67, &CPU::rra, ZPG, 5)
+	ILL_OP(0x77, &CPU::rra, ZPX, 6)
+	ILL_OP(0x6F, &CPU::rra, ABS, 6)
+	ILL_OP(0x7F, &CPU::rra, ABX, 7)
+	ILL_OP(0x7B, &CPU::rra, ABY, 7)
+	ILL_OP(0x63, &CPU::rra, INX, 8)
+	ILL_OP(0x73, &CPU::rra, INY, 8)
+
+	ILL_OP(0x87, &CPU::sax, ZPG, 3)
+	ILL_OP(0x97, &CPU::sax, ZPY, 4)
+	ILL_OP(0x8F, &CPU::sax, ABS, 4)
+	ILL_OP(0x83, &CPU::sax, INX, 6)
+
+	ILL_OP(0xCB, &CPU::sbx, IMM, 2)
+
+	ILL_OP(0x9F, &CPU::sha, ABY, 5)
+	ILL_OP(0x93, &CPU::sha, INY, 6)
+
+	ILL_OP(0x9E, &CPU::shx, ABY, 5)
+
+	ILL_OP(0x9C, &CPU::shy, ABX, 5)
+
+	ILL_OP(0x07, &CPU::slo, ZPG, 5)
+	ILL_OP(0x17, &CPU::slo, ZPX, 6)
+	ILL_OP(0x0F, &CPU::slo, ABS, 6)
+	ILL_OP(0x1F, &CPU::slo, ABX, 7)
+	ILL_OP(0x1B, &CPU::slo, ABY, 7)
+	ILL_OP(0x03, &CPU::slo, INX, 8)
+	ILL_OP(0x13, &CPU::slo, INY, 8)
+
+	ILL_OP(0x47, &CPU::sre, ZPG, 5)
+	ILL_OP(0x57, &CPU::sre, ZPX, 6)
+	ILL_OP(0x4F, &CPU::sre, ABS, 6)
+	ILL_OP(0x5F, &CPU::sre, ABX, 7)
+	ILL_OP(0x5B, &CPU::sre, ABY, 7)
+	ILL_OP(0x43, &CPU::sre, INX, 8)
+	ILL_OP(0x53, &CPU::sre, INY, 8)
+
+	ILL_OP(0x9B, &CPU::tas, ABY, 5)
+
+	ILL_OP(0xEB, &CPU::sbc, IMM, 2)
 }
 
 // irq but cannot be disabled
