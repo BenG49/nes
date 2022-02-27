@@ -24,11 +24,11 @@ ROM::ROM(const std::vector<uint8_t> &ines)
 		err("Only mapper 0 supported");
 
 	if (ines[6] & 0b1000)
-		mirroring = FOUR_SCREEN;
+		mirroring = PPU::Mirroring::FOUR_SCREEN;
 	else if (ines[6] & 1)
-		mirroring = VERTICAL;
+		mirroring = PPU::Mirroring::VERTICAL;
 	else
-		mirroring = HORIZONTAL;
+		mirroring = PPU::Mirroring::HORIZONTAL;
 
 	size_t prg_rom_size = ines[4] * PRG_ROM_PAGE_SIZE;
 	size_t chr_rom_size = ines[5] * CHR_ROM_PAGE_SIZE;
