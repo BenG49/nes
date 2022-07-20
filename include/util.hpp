@@ -11,7 +11,7 @@
 	} else {                      \
 		(var) &= (~(1 << (pos))); \
 	}                             \
-	}
+}
 
 #define MSB(var) ((var) >> 8)
 #define LSB(var) ((var) & 0xFF)

@@ -12,12 +12,9 @@
 
 void CPU::set_flags(uint16_t val, bool neg, bool zero, bool carry)
 {
-	if (neg)
-		SET_BIT(sr, GET_BIT(val, 7), NEG);
-	if (zero)
-		SET_BIT(sr, !LSB(val), ZERO);
-	if (carry)
-		SET_BIT(sr, GET_BIT(val, 8), CARRY);
+	if (neg) sr.neg = GET_BIT(val, 7);
+	if (zero) sr.zero = !LSB(val);
+	if (carry) sr.carry = GET_BIT(val, 8);
 }
 
 void CPU::push(uint8_t n) { bus_write(0x100 + sp--, n); }
@@ -46,9 +43,9 @@ void CPU::adc(uint16_t addr)
 	}*/
 
 	uint16_t n = bus_read(addr);
-	uint16_t out = (uint16_t)a + n + GET_BIT(sr, CARRY);
+	uint16_t out = (uint16_t)a + n + sr.carry;
 
-	SET_BIT(sr, ~(a ^ n) & (a ^ out) & 0x80, OV);
+	sr.ov = ~(a ^ n) & (a ^ out) & 0x80;
 	set_flags(out, true, true, true);
 
 	a = LSB(out);
@@ -81,24 +78,23 @@ void CPU::asl_acc(uint16_t n)
 	set_flags(out, true, true, true);
 }
 
-void CPU::bcc(uint16_t addr) { BR(!GET_BIT(sr, CARRY)) }
-void CPU::bcs(uint16_t addr) { BR(GET_BIT(sr, CARRY)) }
-void CPU::beq(uint16_t addr) { BR(GET_BIT(sr, ZERO)) }
+void CPU::bcc(uint16_t addr) { BR(!sr.carry) }
+void CPU::bcs(uint16_t addr) { BR(sr.carry) }
+void CPU::beq(uint16_t addr) { BR(sr.zero) }
 
 void CPU::bit(uint16_t addr)
 {
 	uint8_t n = bus_read(addr);
 
-	// transfer bits 6 and 7
-	sr &= 0b00111111;
-	sr |= n & 0b11000000;
+	sr.neg = GET_BIT(n, 7);
+	sr.ov = GET_BIT(n, 6);
 
-	SET_BIT(sr, !(n & a), ZERO);
+	sr.zero = !(n & a);
 }
 
-void CPU::bmi(uint16_t addr) { BR(GET_BIT(sr, NEG)) }
-void CPU::bne(uint16_t addr) { BR(!GET_BIT(sr, ZERO)) }
-void CPU::bpl(uint16_t addr) { BR(!GET_BIT(sr, NEG)) }
+void CPU::bmi(uint16_t addr) { BR(sr.neg) }
+void CPU::bne(uint16_t addr) { BR(!sr.zero) }
+void CPU::bpl(uint16_t addr) { BR(!sr.neg) }
 
 void CPU::brk(uint16_t addr)
 {
@@ -110,13 +106,13 @@ void CPU::brk(uint16_t addr)
 	JMP_BUS(IRQL)*/
 }
 
-void CPU::bvc(uint16_t addr) { BR(!GET_BIT(sr, OV)) }
-void CPU::bvs(uint16_t addr) { BR(GET_BIT(sr, OV)) }
+void CPU::bvc(uint16_t addr) { BR(!sr.ov) }
+void CPU::bvs(uint16_t addr) { BR(sr.ov) }
 
-void CPU::clc(uint16_t addr) { SET_BIT(sr, false, CARRY); }
-void CPU::cld(uint16_t addr) { SET_BIT(sr, false, DEC); }
-void CPU::cli(uint16_t addr) { SET_BIT(sr, false, INT); }
-void CPU::clv(uint16_t addr) { SET_BIT(sr, false, OV); }
+void CPU::clc(uint16_t addr) { sr.carry = false; }
+void CPU::cld(uint16_t addr) { sr.dec = false; }
+void CPU::cli(uint16_t addr) { sr.intr = false; }
+void CPU::clv(uint16_t addr) { sr.ov = false; }
 
 void CPU::cmp(uint16_t addr)
 {
@@ -180,8 +176,8 @@ void CPU::ldy(uint16_t addr) { set_flags(y = bus_read(addr), true, true, false);
 void CPU::lsr(uint16_t addr)
 {
 	uint16_t n = bus_read(addr);
-	SET_BIT(sr, n & 1, CARRY);
-	SET_BIT(sr, false, NEG);
+	sr.carry = n & 1;
+	sr.neg = false;
 	uint16_t out = n >> 1;
 
 	set_flags(out, true, true, false);
@@ -191,8 +187,8 @@ void CPU::lsr(uint16_t addr)
 
 void CPU::lsr_acc(uint16_t n)
 {
-	SET_BIT(sr, a & 1, CARRY);
-	SET_BIT(sr, false, NEG);
+	sr.carry = a & 1;
+	sr.neg = false;
 
 	set_flags(a >>= 1, false, true, false);
 }
@@ -202,17 +198,21 @@ void CPU::nop(uint16_t addr) {}
 void CPU::ora(uint16_t addr) { set_flags(a |= bus_read(addr), true, true, false); }
 
 void CPU::pha(uint16_t addr) { push(a); }
-void CPU::php(uint16_t addr) { push(sr | 0b110000); }
+void CPU::php(uint16_t addr) { push(sr.get() | 0b110000); }
 void CPU::pla(uint16_t addr) { set_flags(a = pop(), true, true, false); }
 void CPU::plp(uint16_t addr)
 {
-	sr &= 0b00110000;
-	sr |= pop() & 0b11001111;
+	// sr &= 0b00110000;
+	bool brk = sr.brk;
+
+	sr.set(pop() & 0b11001111);
+
+	sr.brk = brk;
 }
 
 void CPU::rol(uint16_t addr)
 {
-	uint16_t out = ((uint16_t)bus_read(addr) << 1) | GET_BIT(sr, CARRY);
+	uint16_t out = ((uint16_t)bus_read(addr) << 1) | sr.carry;
 
 	set_flags(out, true, true, true);
 
@@ -221,7 +221,7 @@ void CPU::rol(uint16_t addr)
 
 void CPU::rol_acc(uint16_t n)
 {
-	uint16_t out = ((uint16_t)a << 1) | GET_BIT(sr, CARRY);
+	uint16_t out = ((uint16_t)a << 1) | sr.carry;
 	
 	a = out & 0xff;
 
@@ -233,8 +233,8 @@ void CPU::ror(uint16_t addr)
 	uint16_t n = bus_read(addr);
 	bool set_carry = (n & 1) != 0;
 	uint16_t out = n >> 1;
-	SET_BIT(out, GET_BIT(sr, CARRY), 7);
-	SET_BIT(sr, set_carry, CARRY);
+	SET_BIT(out, sr.carry, 7);
+	sr.carry = set_carry;
 
 	set_flags(out, true, true, false);
 
@@ -245,15 +245,15 @@ void CPU::ror_acc(uint16_t n)
 {
 	bool set_carry = (a & 1) != 0;
 	a >>= 1;
-	SET_BIT(a, GET_BIT(sr, CARRY), 7);
-	SET_BIT(sr, set_carry, CARRY);
+	SET_BIT(a, sr.carry, 7);
+	sr.carry = set_carry;
 
 	set_flags(a, true, true, false);
 }
 
 void CPU::rti(uint16_t addr)
 {
-	sr = pop() | 0b100000;
+	sr.set(pop() | 0b100000);
 	pc = pop_word();
 }
 
@@ -269,17 +269,17 @@ void CPU::sbc(uint16_t addr)
 
 	uint16_t n = bus_read(addr);
 	uint16_t out = (uint16_t)a + (n ^ 0xff);
-	out += GET_BIT(sr, CARRY);
+	out += (uint8_t)sr.carry;
 
-	SET_BIT(sr, ((a ^ out) & 0x80) & ((a ^ n) & 0x80), OV);
+	sr.ov = ((a ^ out) & 0x80) & ((a ^ n) & 0x80);
 	set_flags(out, true, true, true);
 
 	a = LSB(out);
 }
 
-void CPU::sec(uint16_t addr) { SET_BIT(sr, true, CARRY); }
-void CPU::sed(uint16_t addr) { SET_BIT(sr, true, DEC); }
-void CPU::sei(uint16_t addr) { SET_BIT(sr, true, INT); }
+void CPU::sec(uint16_t addr) { sr.carry = true; }
+void CPU::sed(uint16_t addr) { sr.dec = true; }
+void CPU::sei(uint16_t addr) { sr.intr = true; }
 
 void CPU::sta(uint16_t addr) { bus_write(addr, a); }
 void CPU::stx(uint16_t addr) { bus_write(addr, x); }

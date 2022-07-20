@@ -13,7 +13,7 @@
 	vec[opcode] = Instr(func, addr, instrs, #func, false);
 
 CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
-	: a(), x(), y(), sp(), pc(), cycles(), bus_read(bus_read), bus_write(bus_write), halted(false)
+	: a(), x(), y(), sp(), sr(), pc(), cycles(), bus_read(bus_read), bus_write(bus_write), halted(false)
 {
 	// opcodes
 	OP(0x69, &CPU::adc, IMM, 2)
@@ -318,13 +318,13 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 // irq but cannot be disabled
 void CPU::nmi()
 {
-	SET_BIT(sr, false, BRK);
+	sr.brk = false;
 
 	push_word(pc);
 
-	push(sr | 0b100000);
+	push(sr.get() | 0b100000);
 
-	SET_BIT(sr, true, INT);
+	sr.intr = true;
 
 	JMP_BUS(IRQL);
 }
@@ -332,15 +332,15 @@ void CPU::nmi()
 void CPU::irq()
 {
 	// interrupt not disabled
-	if (!GET_BIT(sr, INT))
+	if (!sr.intr)
 	{
-		SET_BIT(sr, false, BRK);
+		sr.brk = false;
 
 		push_word(pc);
 
-		push(sr | 0b100000);
+		push(sr.get() | 0b100000);
 
-		SET_BIT(sr, true, INT);
+		sr.intr = true;
 
 		JMP_BUS(IRQL);
 	}
@@ -349,7 +349,7 @@ void CPU::irq()
 void CPU::reset()
 {
 	a = y = x = 0;
-	sr = 0b00100100;
+	sr.set(0b00100100);
 
 	JMP_BUS(RSTL)
 

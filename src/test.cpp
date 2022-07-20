@@ -8,7 +8,7 @@ void run_tests()
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0x05, 0x00
 	}), 0), [](CPU *cpu) -> bool {
-		return cpu->a == 0x05 && GET_BIT(cpu->sr, ZERO) == 0 && GET_BIT(cpu->sr, OV) == 0;
+		return cpu->a == 0x05 && cpu->sr.zero == 0 && cpu->sr.ov == 0;
 	});
 
 	// lda, tax, inx, brk test
@@ -33,37 +33,37 @@ void run_tests()
 		0xa9, 0x50, // LDA #$50
 		0x69, 0x50, // ADC #$50
 	}), 0x400), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 1 && GET_BIT(cpu->sr, CARRY) == 0;
+		return cpu->sr.ov == 1 && cpu->sr.carry == 0;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0x50, // LDA #$50
 		0x69, 0x90, // ADC #$90
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 0;
+		return cpu->sr.ov == 0 && cpu->sr.carry == 0;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0x50, // LDA #$50
 		0x69, 0xd0, // ADC #$d0
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 1;
+		return cpu->sr.ov == 0 && cpu->sr.carry == 1;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0xd0, // LDA #$d0
 		0x69, 0x10, // ADC #$10
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 0;
+		return cpu->sr.ov == 0 && cpu->sr.carry == 0;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0xd0, // LDA #$d0
 		0x69, 0x50, // ADC #$50
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 1;
+		return cpu->sr.ov == 0 && cpu->sr.carry == 1;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0xd0, // LDA #$d0
 		0x69, 0x90, // ADC #$90
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 1 && GET_BIT(cpu->sr, CARRY) == 1;
+		return cpu->sr.ov == 1 && cpu->sr.carry == 1;
 	});
 
 	std::cout << "---- SBC tests ----\n";
@@ -71,37 +71,37 @@ void run_tests()
 		0xa9, 0x50, // LDA #$50
 		0xe9, 0xb0, // SBC #$b0
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 1 && GET_BIT(cpu->sr, CARRY) == 0;
+		return cpu->sr.ov == 1 && cpu->sr.carry == 0;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0x50, // LDA #$50
 		0xe9, 0x70, // SBC #$70
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 0;
+		return cpu->sr.ov == 0 && cpu->sr.carry == 0;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0x50, // LDA #$50
 		0xe9, 0x30, // SBC #$30
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 1;
+		return cpu->sr.ov == 0 && cpu->sr.carry == 1;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0xd0, // LDA #$d0
 		0xe9, 0xf0, // SBC #$f0
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 0;
+		return cpu->sr.ov == 0 && cpu->sr.carry == 0;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0xd0, // LDA #$d0
 		0xe9, 0xb0, // SBC #$b0
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 0 && GET_BIT(cpu->sr, CARRY) == 1;
+		return cpu->sr.ov == 0 && cpu->sr.carry == 1;
 	});
 	cpu_test(MemState(std::vector<uint8_t>({
 		0xa9, 0xd0, // LDA #$d0
 		0xe9, 0x70, // SBC #$70
 	}), 0), [](CPU *cpu) -> bool {
-		return GET_BIT(cpu->sr, OV) == 1 && GET_BIT(cpu->sr, CARRY) == 1;
+		return cpu->sr.ov == 1 && cpu->sr.carry == 1;
 	});
 
 	// BRK test

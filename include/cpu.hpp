@@ -7,6 +7,8 @@
 
 #include <util.hpp>
 
+// TODO: stop using macros for status register
+
 const uint8_t NEG   = 7;
 const uint8_t OV    = 6;
 const uint8_t CONST = 5;
@@ -28,9 +30,37 @@ enum AddrMode {
 
 class CPU {
 public:
+	// NV-BDIZC
+	struct Status {
+		bool neg, ov, brk, dec, intr, zero, carry;
+
+		uint8_t get() {
+			return carry |
+			       (zero << 1) |
+				   (intr << 2) |
+				   (dec << 3) |
+				   (brk << 4) |
+				   (1 << 5) |
+				   (ov << 6) |
+				   (neg << 7);
+		}
+
+		void set(uint8_t val) {
+			neg = GET_BIT(val, 7);
+			ov =  GET_BIT(val, 6);
+			brk = GET_BIT(val, 4);
+			dec = GET_BIT(val, 3);
+			intr = GET_BIT(val, 2);
+			zero = GET_BIT(val, 1);
+			carry = val & 1;
+		}
+
+		Status() {}
+	};
+
 	// NOTE: stack pointer = 0x100 + sp, grows downward
-	// NV--DIZC
-	uint8_t a, x, y, sp, sr;
+	uint8_t a, x, y, sp;
+	Status sr;
 
 	uint16_t pc;
 

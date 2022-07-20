@@ -125,42 +125,42 @@ void snake()
 	SDL_Quit();
 }
 
+const std::function<void(CPU *)> trace = [](CPU *cpu) {
+	uint8_t op = cpu->bus_read(cpu->pc);
+	CPU::Instr instr = cpu->vec[op];
+
+	printf("%04X  ", cpu->pc);
+
+	int bytes = cpu->instr_bytes(instr.addr_mode);
+	for (int i = 0; i < 3; ++i)
+	{
+		if (i < bytes)
+			printf("%02X ", cpu->bus_read(cpu->pc + i));
+		else
+			printf("   ");
+	}
+
+	uint16_t args = 0;
+	if (bytes == 2)
+		args = cpu->bus_read(cpu->pc + 1);
+	else if (bytes == 3)
+		args = cpu->bus_read(cpu->pc + 1) | (cpu->bus_read(cpu->pc + 2) << 8);
+
+	if (instr.valid)
+		printf(" ");
+	else
+		printf("*");
+
+	printf("%-31s A:%02X X:%02X Y:%02X P:%02X SP:%02X", cpu->disas(op, args).c_str(), cpu->a, cpu->x, cpu->y, cpu->sr.get(), cpu->sp);
+
+	puts("");
+};
+
 // TODO: add masswerk virtual 6502 trace style
 int main(int argc, const char *argv[])
 {
-	std::function<void(CPU *)> test_trace_f = [](CPU *cpu) {
-		uint8_t op = cpu->bus_read(cpu->pc);
-		CPU::Instr instr = cpu->vec[op];
-
-		printf("%04X  ", cpu->pc);
-
-		int bytes = cpu->instr_bytes(instr.addr_mode);
-		for (int i = 0; i < 3; ++i)
-		{
-			if (i < bytes)
-				printf("%02X ", cpu->bus_read(cpu->pc + i));
-			else
-				printf("   ");
-		}
-
-		uint16_t args = 0;
-		if (bytes == 2)
-			args = cpu->bus_read(cpu->pc + 1);
-		else if (bytes == 3)
-			args = cpu->bus_read(cpu->pc + 1) | (cpu->bus_read(cpu->pc + 2) << 8);
-
-		if (instr.valid)
-			printf(" ");
-		else
-			printf("*");
-
-		printf("%-31s A:%02X X:%02X Y:%02X P:%02X SP:%02X", cpu->disas(op, args).c_str(), cpu->a, cpu->x, cpu->y, cpu->sr, cpu->sp);
-
-		puts("");
-	};
-
 	NES nes(readfile("nestest.nes"));
 
 	nes.cpu.pc = 0xC000;
-	nes.cpu.exec_with_callback(test_trace_f);
+	nes.cpu.exec_with_callback(trace);
 }
