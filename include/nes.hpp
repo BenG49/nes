@@ -14,6 +14,7 @@ public:
 	NES(const std::vector<uint8_t> &ines);
 
 	CPU cpu;
+	PPU ppu;
 	ROM rom;
 
 	// 0x0000-0x07FF

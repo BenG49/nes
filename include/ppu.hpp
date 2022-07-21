@@ -12,6 +12,13 @@ const uint8_t PPUADDR = 6;
 const uint8_t PPUDATA = 7;
 
 class PPU {
+public:
+	enum Mirroring {
+		VERTICAL,
+		HORIZONTAL,
+		FOUR_SCREEN
+	};
+
 private:
 	/*
 	Pattern table defines the shapes of tiles and sprites
@@ -22,29 +29,39 @@ private:
 
 	Located from $0000 - $1FFF
 	*/
-	uint8_t patterntable[0x2000];
+	uint8_t patterntable[2][0x1000];
 	uint8_t nametable[0x1000];
 	uint8_t palette[0x20];
+	uint8_t oam[0x100];
 
-	struct Addr {
-		uint16_t addr;
-		bool wrote_hi;
-	};
+	Mirroring mirroring;
 
-	Addr ppuaddr;
+	// PPUCTRL
+	uint8_t ctrl;
 
-	uint8_t ppu_read(uint8_t addr);
-	uint8_t ppu_write(uint8_t addr, uint8_t val);
+	// PPUMASK
+	uint8_t mask;
 
+	// PPUSTATUS
+	uint8_t status;
+
+	// PPUADDR
+	uint16_t ppuaddr;
+	bool ppuaddr_hi;
+
+	// PPUDATA
+	uint8_t read_buffer;
+
+	uint8_t internal_read(uint16_t addr);
+	void internal_write(uint16_t addr, uint8_t data);
+
+	uint16_t mirror_nametable_addr(uint16_t addr);
+	void inc_ppuaddr();
 public:
-	enum Mirroring {
-		VERTICAL,
-		HORIZONTAL,
-		FOUR_SCREEN
-	};
 
 	PPU();
 
-	uint8_t read(uint8_t addr);
-	uint8_t write(uint8_t addr, uint8_t val);
+	// communication from cpu to ppu
+	uint8_t read(uint16_t addr);
+	void write(uint16_t addr, uint8_t data);
 };
