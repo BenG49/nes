@@ -13,9 +13,9 @@ private:
 public:
 	NES(const std::vector<uint8_t> &ines);
 
+	ROM rom;
 	CPU cpu;
 	PPU ppu;
-	ROM rom;
 
 	// 0x0000-0x07FF
 	uint8_t ram[RAM_SIZE];

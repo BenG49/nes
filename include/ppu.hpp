@@ -36,20 +36,16 @@ private:
 
 	Mirroring mirroring;
 
-	// PPUCTRL
-	uint8_t ctrl;
+	// PPUCTRL (0x2000)
+	// PPUMASK (0x2001)
+	// PPUSCROLL (0x2005)
+	// OAMADDR (0x2003)
+	uint8_t ctrl, mask, scroll, oamaddr;
 
-	// PPUMASK
-	uint8_t mask;
-
-	// PPUSTATUS
-	uint8_t status;
-
-	// PPUADDR
+	// PPUADDR (0x2006)
 	uint16_t ppuaddr;
 	bool ppuaddr_hi;
 
-	// PPUDATA
 	uint8_t read_buffer;
 
 	uint8_t internal_read(uint16_t addr);
@@ -57,9 +53,9 @@ private:
 
 	uint16_t mirror_nametable_addr(uint16_t addr);
 	void inc_ppuaddr();
-public:
 
-	PPU();
+public:
+	PPU(Mirroring mirroring);
 
 	// communication from cpu to ppu
 	uint8_t read(uint16_t addr);

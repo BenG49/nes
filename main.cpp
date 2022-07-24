@@ -161,6 +161,5 @@ int main(int argc, const char *argv[])
 {
 	NES nes(readfile("nestest.nes"));
 
-	nes.cpu.pc = 0xC000;
 	nes.cpu.exec_with_callback(trace);
 }

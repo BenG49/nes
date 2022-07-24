@@ -4,12 +4,15 @@
 #include <iostream>
 
 NES::NES(const std::vector<uint8_t> &ines)
-	: cpu([=](uint16_t addr) -> uint8_t { return this->read(addr); },
+	: rom(ines)
+	, cpu([=](uint16_t addr) -> uint8_t { return this->read(addr); },
 	      [&](uint16_t addr, uint8_t data) { this->write(addr, data); })
-	, ppu()
-	, rom(ines)
+	, ppu(rom.mirroring)
 	, ram()
 {
+	// $C000 is an entry point for incomplete emulators
+	// $C004 is ths normal entry point
+	rom.prg_rom[(cpu.RSTL - 0x8000) % 0x4000] = 0;
 	cpu.reset();
 }
 

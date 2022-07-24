@@ -1,6 +1,7 @@
 #include <ppu.hpp>
 
-PPU::PPU() {}
+PPU::PPU(Mirroring mirroring)
+	: mirroring(mirroring) {}
 
 uint16_t PPU::mirror_nametable_addr(uint16_t addr) {
 	if (mirroring == Mirroring::FOUR_SCREEN) {
@@ -75,8 +76,13 @@ uint8_t PPU::read(uint16_t addr) {
 	if (addr >= 0x2000 && addr < 0x4000) {
 		addr &= 0b111;
 
+		// PPUSTATUS
+		if (addr == 2) {
+			// TODO: implement
+			return 0;
+		}
 		// PPUDATA
-		if (addr == 7) {
+		else if (addr == 7) {
 			uint8_t out = read_buffer;
 			read_buffer = internal_read(ppuaddr);
 
@@ -91,8 +97,16 @@ void PPU::write(uint16_t addr, uint8_t data) {
 	if (addr >= 0x2000 && addr < 0x4000) {
 		addr &= 0b111;
 
+		// PPUCTRL
+		if (addr == 0) { ctrl = data; }
+		// PPUMASK
+		else if (addr == 1) { mask = data; }
+		// OAMADDR
+		else if (addr == 3) { oamaddr = data; }
+		// PPUSCROLL
+		else if (addr == 5) { scroll = data; }
 		// PPUADDR
-		if (addr == 6) {
+		else if (addr == 6) {
 			if (ppuaddr_hi) {
 				ppuaddr &= 0xFF00;
 				ppuaddr |= data;
@@ -102,10 +116,16 @@ void PPU::write(uint16_t addr, uint8_t data) {
 
 				ppuaddr_hi = true;
 			}
-		} else if (addr == 7) {
+		}
+		// PPUDATA
+		else if (addr == 7) {
 			internal_write(ppuaddr, data);
 			
 			inc_ppuaddr();
 		}
+	}
+	// OAMDMA
+	else if (addr == 0x4014) {
+		// TODO: implementwa
 	}
 }
