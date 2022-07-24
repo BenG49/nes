@@ -7,8 +7,6 @@
 
 #include <util.hpp>
 
-// TODO: stop using macros for status register
-
 const uint8_t NEG   = 7;
 const uint8_t OV    = 6;
 const uint8_t CONST = 5;
@@ -58,7 +56,8 @@ public:
 		Status() {}
 	};
 
-	// NOTE: stack pointer = 0x100 + sp, grows downward
+private:
+	// stack pointer = 0x100 + sp, grows downward
 	uint8_t a, x, y, sp;
 	Status sr;
 
@@ -93,11 +92,8 @@ public:
 	bus_write_t bus_write;
 
 	bool halted;
-private:
 	
 	void set_flags(uint16_t val, bool neg, bool zero, bool carry);
-
-
 
 	void push(uint8_t n);
 	void push_word(uint16_t n);
@@ -188,8 +184,8 @@ public:
 	void reset();
 
 	void step();
-	void exec_with_callback(std::function<void(CPU *)> callback);
-	void exec();
+	void exec_with_callback(std::function<void(CPU *)> callback, int cycles = 0);
+	void exec(int cycles = 0);
 
 	void set_read(bus_read_t bus_read);
 	void set_write(bus_write_t bus_write);
@@ -202,5 +198,6 @@ public:
 	static const uint16_t IRQH = 0xFFFF;
 
 	std::string disas(uint8_t instr, uint16_t val);
+	void trace();
 	int instr_bytes(AddrMode mode);
 };

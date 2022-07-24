@@ -419,18 +419,22 @@ void CPU::step()
 	cycles += instr.cycles;
 }
 
-void CPU::exec_with_callback(std::function<void(CPU *)> callback)
+void CPU::exec_with_callback(std::function<void(CPU *)> callback, int cycs)
 {
-	while (!halted)
+	size_t end = cycles + cycs;
+
+	while (cycs == 0 || cycles < end)
 	{
 		callback(this);
 		step();
 	}
 }
 
-void CPU::exec()
+void CPU::exec(int cycs)
 {
-	while (!halted) step();
+	size_t end = cycles + cycs;
+
+	while (cycs == 0 || cycles < end) step();
 }
 
 void CPU::set_read(bus_read_t br) { bus_read = br; }
@@ -508,6 +512,37 @@ std::string CPU::disas(uint8_t instr, uint16_t args)
 	}
 
 	return out;
+}
+
+void CPU::trace() {
+	uint8_t op = bus_read(pc);
+	CPU::Instr instr = vec[op];
+
+	printf("%04X  ", pc);
+
+	int bytes = instr_bytes(instr.addr_mode);
+	for (int i = 0; i < 3; ++i)
+	{
+		if (i < bytes)
+			printf("%02X ", bus_read(pc + i));
+		else
+			printf("   ");
+	}
+
+	uint16_t args = 0;
+	if (bytes == 2)
+		args = bus_read(pc + 1);
+	else if (bytes == 3)
+		args = bus_read(pc + 1) | (bus_read(pc + 2) << 8);
+
+	if (instr.valid)
+		printf(" ");
+	else
+		printf("*");
+
+	printf("%-31s A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%lu", disas(op, args).c_str(), a, x, y, sr.get(), sp, cycles);
+
+	puts("");
 }
 
 int CPU::instr_bytes(AddrMode mode)
