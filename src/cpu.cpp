@@ -47,7 +47,7 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0x30, &CPU::bmi, REL, 2)
 
 	OP(0x24, &CPU::bit, ZPG, 3)
-	OP(0x2C, &CPU::bit, ABS, 3)
+	OP(0x2C, &CPU::bit, ABS, 4)
 
 	OP(0xD0, &CPU::bne, REL, 2)
 	OP(0x10, &CPU::bpl, REL, 2)
@@ -65,7 +65,7 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0xC9, &CPU::cmp, IMM, 2)
 	OP(0xC5, &CPU::cmp, ZPG, 3)
 	OP(0xD5, &CPU::cmp, ZPX, 4)
-	OP(0xCD, &CPU::cmp, ABS, 5)
+	OP(0xCD, &CPU::cmp, ABS, 4)
 	OP(0xDD, &CPU::cmp, ABX, 4)
 	OP(0xD9, &CPU::cmp, ABY, 4)
 	OP(0xC1, &CPU::cmp, INX, 6)
@@ -102,7 +102,7 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	OP(0xFE, &CPU::inc, ABX, 7)
 
 	OP(0x4C, &CPU::jmp, ABS, 3)
-	OP(0x6C, &CPU::jmp, IND, 6)
+	OP(0x6C, &CPU::jmp, IND, 5)
 
 	OP(0x20, &CPU::jsr, ABS, 6)
 
@@ -251,7 +251,7 @@ CPU::CPU(bus_read_t bus_read, bus_write_t bus_write)
 	ILL_OP(0xFF, &CPU::isb, ABX, 7)
 	ILL_OP(0xFB, &CPU::isb, ABY, 7)
 	ILL_OP(0xE3, &CPU::isb, INX, 8)
-	ILL_OP(0xF3, &CPU::isb, INY, 4)
+	ILL_OP(0xF3, &CPU::isb, INY, 8)
 
 	ILL_OP(0xBB, &CPU::las, ABY, 4);
 
@@ -354,7 +354,10 @@ void CPU::reset()
 	JMP_BUS(RSTL)
 
 	sp = 0xFD;
+
+	cycles = 7;
 }
+
 void CPU::step()
 {
 	uint8_t op = bus_read(pc++);
@@ -372,16 +375,30 @@ void CPU::step()
 			addr = bus_read(pc++);
 			addr |= (bus_read(pc++) << 8);
 			break;
-		case ABX:
-			addr = bus_read(pc++);
-			addr |= (bus_read(pc++) << 8);
-			addr += x;
+		case ABX: {
+			uint16_t absx = bus_read(pc++);
+			absx |= (bus_read(pc++) << 8);
+			addr = absx + x;
+
+			if ((op & 0xF) != 0xE
+				&& (op & 0xF) != 0xF
+				&& op != 0x9D
+				&& MSB(absx) != MSB(addr)) cycles++;
+
 			break;
-		case ABY:
-			addr = bus_read(pc++);
-			addr |= (bus_read(pc++) << 8);
-			addr += y;
+		}
+		case ABY: {
+			uint16_t abs = bus_read(pc++);
+			abs |= (bus_read(pc++) << 8);
+			addr = abs + y;
+
+			if ((op & 0xF) != 0xB
+				&& op != 0x99
+				&& op != 0xD3
+				&& MSB(abs) != MSB(addr)) cycles++;
+
 			break;
+		}
 		case REL: {
 			uint16_t offset = bus_read(pc++);
 			if (offset < 128)
@@ -408,8 +425,13 @@ void CPU::step()
 		case INY: {
 			uint8_t base = bus_read(pc++);
 
-			addr = bus_read(base) | (bus_read((base + 1) & 0xff) << 8);
-			addr += y;
+			uint16_t ind = bus_read(base) | (bus_read((base + 1) & 0xff) << 8);
+			addr = ind + y;
+			
+			if ((op == 0xB3 || (op & 0xF) != 0x3)
+				&& op != 0x91
+				&& MSB(addr) != MSB(ind)) cycles++;
+
 			break;
 		}
 	}

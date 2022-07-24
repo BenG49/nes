@@ -2,8 +2,14 @@
 
 #include <iostream>
 
-#define BR(flag) \
-	if (flag) pc = addr;
+#define BR(flag)                            \
+	if (flag) {                             \
+		if (MSB(addr) != MSB(pc)) cycles++; \
+                                            \
+		pc = addr;                          \
+                                            \
+		cycles++;                           \
+	}
 
 #define TR(func, from, to) \
 	void CPU::func(uint16_t addr) { set_flags(to = from, true, true, false); }
