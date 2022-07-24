@@ -1,6 +1,6 @@
 # nes
 
-Resources:
+CPU:
 - https://en.wikipedia.org/wiki/MOS_Technology_6502#Instruction_table
 - http://www.emulator101.com/6502-addressing-modes.html
 - http://www.emulator101.com/reference/6502-reference.html
@@ -12,6 +12,7 @@ Resources:
 - https://stackoverflow.com/questions/52017657/6502-emulator-testing-nestest
 - https://bugzmanov.github.io/nes_ebook/
 - https://wiki.nesdev.org/w/index.php/Status_flags#The_B_flag
+- https://www.nesdev.org/6502_cpu.txt
 
 NES:
 - https://wiki.nesdev.org/w/index.php/Emulator_tests
