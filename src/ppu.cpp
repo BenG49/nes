@@ -1,7 +1,9 @@
 #include <ppu.hpp>
 
-PPU::PPU(Mirroring mirroring)
-	: mirroring(mirroring) {}
+#include <nes.hpp>
+
+PPU::PPU(NES *nes, Mirroring mirroring)
+	: nes(nes), mirroring(mirroring) {}
 
 uint16_t PPU::mirror_nametable_addr(uint16_t addr) {
 	if (mirroring == Mirroring::FOUR_SCREEN) {
@@ -24,14 +26,6 @@ uint16_t PPU::mirror_nametable_addr(uint16_t addr) {
 	addr |= ((table & 0b11) << 10);
 
 	return addr;
-}
-
-void PPU::inc_ppuaddr() {
-	if ((ctrl >> 2) & 1) {
-		ppuaddr += 32;
-	} else {
-		ppuaddr += 1;
-	}
 }
 
 uint8_t PPU::internal_read(uint16_t addr) {
@@ -78,15 +72,16 @@ uint8_t PPU::read(uint16_t addr) {
 
 		// PPUSTATUS
 		if (addr == 2) {
-			// TODO: implement
-			return 0;
+			uint8_t out = status.get();
+			status.in_vblank = false;
+			return out;
 		}
 		// PPUDATA
 		else if (addr == 7) {
 			uint8_t out = read_buffer;
-			read_buffer = internal_read(ppuaddr);
+			read_buffer = internal_read(ppuaddr.addr);
 
-			inc_ppuaddr();
+			ppuaddr.inc(ctrl.inc_vram_on_read);
 			
 			return out;
 		}
@@ -98,34 +93,64 @@ void PPU::write(uint16_t addr, uint8_t data) {
 		addr &= 0b111;
 
 		// PPUCTRL
-		if (addr == 0) { ctrl = data; }
+		if (addr == 0) {
+			bool gen_nmi_prev = ctrl.gen_nmi;
+			
+			ctrl.set(data);
+
+			if (!gen_nmi_prev && ctrl.gen_nmi && status.in_vblank) {
+				nes->cpu.nmi();
+			}
+		}
 		// PPUMASK
-		else if (addr == 1) { mask = data; }
+		else if (addr == 1) { mask.set(data); }
 		// OAMADDR
 		else if (addr == 3) { oamaddr = data; }
 		// PPUSCROLL
 		else if (addr == 5) { scroll = data; }
 		// PPUADDR
 		else if (addr == 6) {
-			if (ppuaddr_hi) {
-				ppuaddr &= 0xFF00;
-				ppuaddr |= data;
+			if (ppuaddr.hi) {
+				ppuaddr.addr &= 0xFF00;
+				ppuaddr.addr |= data;
 			} else {
-				ppuaddr &= 0xFF;
-				ppuaddr |= (data << 8);
+				ppuaddr.addr &= 0xFF;
+				ppuaddr.addr |= (data << 8);
 
-				ppuaddr_hi = true;
+				ppuaddr.hi = true;
 			}
 		}
 		// PPUDATA
 		else if (addr == 7) {
-			internal_write(ppuaddr, data);
+			internal_write(ppuaddr.addr, data);
 			
-			inc_ppuaddr();
+			ppuaddr.inc(ctrl.inc_vram_on_read);
 		}
 	}
 	// OAMDMA
 	else if (addr == 0x4014) {
-		// TODO: implementwa
+		// TODO: implement
+	}
+}
+
+void PPU::exec(uint8_t cycles) {
+	while (cycles--) step();
+}
+
+void PPU::step() {
+	cycles++;
+
+	if (cycles >= 341) {
+		cycles -= 341;
+		scanline++;
+
+		if (scanline == 241 && ctrl.gen_nmi) {
+			status.in_vblank = true;
+
+			nes->cpu.nmi();	
+		} else if (scanline >= 262) {
+			scanline = 0;
+			status.in_vblank = false;
+		}
 	}
 }

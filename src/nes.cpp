@@ -7,7 +7,7 @@ NES::NES(const std::vector<uint8_t> &ines)
 	: rom(ines)
 	, cpu([=](uint16_t addr) -> uint8_t { return this->read(addr); },
 	      [&](uint16_t addr, uint8_t data) { this->write(addr, data); })
-	, ppu(rom.mirroring)
+	, ppu(this, rom.mirroring)
 	, ram()
 {
 	// $C000 is an entry point for incomplete emulators
@@ -63,5 +63,13 @@ void NES::write(uint16_t addr, uint8_t data)
 	} else {
 		printf("Write to unsupported location: 0x%04X\n", addr);
 		exit(1);
+	}
+}
+
+void NES::run() {
+	while (true) {
+		uint8_t cpu_cycs = cpu.step();
+
+		ppu.exec(cpu_cycs * 3);
 	}
 }

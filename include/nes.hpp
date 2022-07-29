@@ -44,4 +44,6 @@ public:
 	uint8_t read_prg_rom(uint16_t addr);
 
 	void write(uint16_t addr, uint8_t data);
+
+	void run();
 };
