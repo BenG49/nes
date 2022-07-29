@@ -358,8 +358,9 @@ void CPU::reset()
 	cycles = 7;
 }
 
-void CPU::step()
+size_t CPU::step()
 {
+	size_t start_cycles = cycles;
 	uint8_t op = bus_read(pc++);
 	Instr instr = vec[op];
 
@@ -439,6 +440,8 @@ void CPU::step()
 	(this->*instr.func)(addr);
 
 	cycles += instr.cycles;
+
+	return cycles - start_cycles;
 }
 
 void CPU::exec_with_callback(std::function<void(CPU *)> callback, int cycs)

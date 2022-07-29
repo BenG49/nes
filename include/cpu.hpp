@@ -183,7 +183,8 @@ public:
 	void irq();
 	void reset();
 
-	void step();
+	// returns cycles taken
+	size_t step();
 	void exec_with_callback(std::function<void(CPU *)> callback, int cycles = 0);
 	void exec(int cycles = 0);
 
