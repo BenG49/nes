@@ -66,9 +66,9 @@ void NES::write(uint16_t addr, uint8_t data)
 	}
 }
 
-void NES::run() {
+void NES::run(std::function<void(CPU *)> cpu_callback) {
 	while (true) {
-		uint8_t cpu_cycs = cpu.step();
+		uint8_t cpu_cycs = cpu.step(cpu_callback);
 
 		ppu.exec(cpu_cycs * 3);
 	}

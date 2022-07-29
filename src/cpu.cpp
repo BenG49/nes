@@ -358,8 +358,12 @@ void CPU::reset()
 	cycles = 7;
 }
 
-size_t CPU::step()
+size_t CPU::step(std::function<void(CPU *)> callback)
 {
+	if (callback != nullptr) {
+		callback(this);
+	}
+
 	size_t start_cycles = cycles;
 	uint8_t op = bus_read(pc++);
 	Instr instr = vec[op];
@@ -444,22 +448,11 @@ size_t CPU::step()
 	return cycles - start_cycles;
 }
 
-void CPU::exec_with_callback(std::function<void(CPU *)> callback, int cycs)
+void CPU::exec(int cycs, std::function<void(CPU *)> callback)
 {
 	size_t end = cycles + cycs;
 
-	while (cycs == 0 || cycles < end)
-	{
-		callback(this);
-		step();
-	}
-}
-
-void CPU::exec(int cycs)
-{
-	size_t end = cycles + cycs;
-
-	while (cycs == 0 || cycles < end) step();
+	while (cycs == 0 || cycles < end) step(callback);
 }
 
 void CPU::set_read(bus_read_t br) { bus_read = br; }

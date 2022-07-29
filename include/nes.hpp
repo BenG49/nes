@@ -45,5 +45,5 @@ public:
 
 	void write(uint16_t addr, uint8_t data);
 
-	void run();
+	void run(std::function<void(CPU *)> cpu_callback=nullptr);
 };
