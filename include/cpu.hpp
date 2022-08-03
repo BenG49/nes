@@ -18,8 +18,6 @@ const uint8_t CARRY = 0;
 
 class CPU;
 
-typedef std::function<uint8_t(uint16_t)> bus_read_t;
-typedef std::function<void(uint16_t, uint8_t)> bus_write_t;
 typedef void (CPU::*op_t)(uint16_t);
 
 enum AddrMode {
@@ -90,8 +88,6 @@ private:
 
 	bus_read_t bus_read;
 	bus_write_t bus_write;
-
-	bool halted;
 	
 	void set_flags(uint16_t val, bool neg, bool zero, bool carry);
 
@@ -182,6 +178,8 @@ public:
 	void nmi();
 	void irq();
 	void reset();
+
+	bool halted;
 
 	// returns cycles taken
 	size_t step(std::function<void(CPU *)> callback=nullptr);

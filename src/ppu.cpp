@@ -2,8 +2,8 @@
 
 #include <nes.hpp>
 
-PPU::PPU(NES *nes, Mirroring mirroring)
-	: nes(nes), mirroring(mirroring) {}
+PPU::PPU(NES *nes, Mirroring mirroring, bus_read_t internal_read, bus_write_t internal_write)
+	: nes(nes), mirroring(mirroring), internal_read(internal_read), internal_write(internal_write) {}
 
 uint16_t PPU::mirror_nametable_addr(uint16_t addr) {
 	if (mirroring == Mirroring::FOUR_SCREEN) {
@@ -26,44 +26,6 @@ uint16_t PPU::mirror_nametable_addr(uint16_t addr) {
 	addr |= ((table & 0b11) << 10);
 
 	return addr;
-}
-
-uint8_t PPU::internal_read(uint16_t addr) {
-	if (addr < 0x2000) {
-		uint8_t table = (addr >> 12) & 1;
-
-		return patterntable[table][addr & 0xFFF];
-	} else if (addr < 0x3000) {
-		return nametable[mirror_nametable_addr(addr) - 0x2000];
-	} else if (addr < 0x2F00) {
-		// mirror back down to 0x2000-0x2EFF
-		return nametable[mirror_nametable_addr(addr & 0x2FFF) - 0x2000];
-	} else if (addr < 0x4000) {
-		// 0x3F20-0x3FFF mirrors back to 0x3F00-0x3F1F
-		return palette[(addr - 0x3F00) & 0x1F];
-	}
-
-	printf("Read to unsupported location on PPU bus: 0x%04X\n", addr);
-	exit(1);
-}
-
-void PPU::internal_write(uint16_t addr, uint8_t data) {
-	if (addr < 0x2000) {
-		uint8_t table = (addr >> 12) & 1;
-
-		patterntable[table][addr & 0xFFF] = data;
-	} else if (addr < 0x3000) {
-		nametable[mirror_nametable_addr(addr) - 0x2000] = data;
-	} else if (addr < 0x2F00) {
-		// mirror back down to 0x2000-0x2EFF
-		nametable[mirror_nametable_addr(addr & 0x2FFF) - 0x2000] = data;
-	} else if (addr < 0x4000) {
-		// 0x3F20-0x3FFF mirrors back to 0x3F00-0x3F1F
-		palette[(addr - 0x3F00) & 0x1F] = data;
-	}
-
-	printf("Write to unsupported location on PPU bus: 0x%04X\n", addr);
-	exit(1);
 }
 
 uint8_t PPU::read(uint16_t addr) {

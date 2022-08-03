@@ -7,8 +7,28 @@ NES::NES(const std::vector<uint8_t> &ines)
 	: rom(ines)
 	, cpu([=](uint16_t addr) -> uint8_t { return this->read(addr); },
 	      [&](uint16_t addr, uint8_t data) { this->write(addr, data); })
-	, ppu(this, rom.mirroring)
+	, ppu(this, rom.mirroring,
+		[=](uint16_t addr) -> uint8_t {
+			if (addr < 0x2000) return rom.chr_rom[addr];
+			else if (addr < 0x3F00) return vram[addr & 0xFFF];
+			else if (addr < 0x4000) return palette[addr & 0x1F];
+			else {
+				printf("Read to unsupported location: 0x%04X\n", addr);
+				exit(1);
+			}
+		},
+		[&](uint16_t addr, uint8_t data) {
+			if (addr < 0x2000) rom.chr_rom[addr] = data;
+			else if (addr < 0x3F00) vram[addr & 0xFFF] = data;
+			else if (addr < 0x4000) palette[addr & 0x1F] = data;
+			else {
+				printf("Read to unsupported location: 0x%04X\n", addr);
+				exit(1);
+			}
+		})
 	, ram()
+	, vram()
+	, palette()
 {
 	// $C000 is an entry point for incomplete emulators
 	// $C004 is ths normal entry point
@@ -20,7 +40,7 @@ uint8_t NES::read(uint16_t addr)
 {
 	// ram and ram mirrors
 	if (addr < 0x2000) {
-		return ram[addr & RAM_MASK];
+		return ram[addr & (0x800 - 1)];
 	}
 	// ppu space
 	else if (addr < 0x4000) {
@@ -50,7 +70,7 @@ void NES::write(uint16_t addr, uint8_t data)
 {
 	// ram and ram mirrors
 	if (addr < 0x2000) {
-		ram[addr & RAM_MASK] = data;
+		ram[addr & (0x800 - 1)] = data;
 	}
 	// ppu
 	else if (addr < 0x4000) {

@@ -117,23 +117,13 @@ public:
 		FOUR_SCREEN
 	};
 
-private:
+// private:
 	NES *nes;
 
-	/*
-	Pattern table defines the shapes of tiles and sprites
-	and is split into two parts - left and right
-
-	Each tile is 16 bytes - two 8 byte bit planes, low
-	and high.
-
-	Located from $0000 - $1FFF
-	*/
-	uint8_t patterntable[2][0x1000];
-	uint8_t nametable[0x1000];
-	uint8_t palette[0x20];
+	uint8_t vram[0x1000];
 	uint8_t oam[0x100];
 
+private:
 	Mirroring mirroring;
 
 	// PPUCTRL (0x2000)
@@ -152,9 +142,11 @@ private:
 
 	uint8_t read_buffer;
 
-	uint8_t internal_read(uint16_t addr);
-	void internal_write(uint16_t addr, uint8_t data);
+public:
+	bus_read_t internal_read;
+	bus_write_t internal_write;
 
+private:
 	uint16_t mirror_nametable_addr(uint16_t addr);
 
 
@@ -162,7 +154,7 @@ private:
 	size_t cycles;
 
 public:
-	PPU(NES *nes, Mirroring mirroring);
+	PPU(NES *nes, Mirroring mirroring, bus_read_t internal_read, bus_write_t internal_write);
 
 	// communication from cpu to ppu
 	uint8_t read(uint16_t addr);
