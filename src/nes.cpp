@@ -22,7 +22,7 @@ NES::NES(const std::vector<uint8_t> &ines)
 			else if (addr < 0x3F00) vram[addr & 0xFFF] = data;
 			else if (addr < 0x4000) palette[addr & 0x1F] = data;
 			else {
-				printf("Read to unsupported location: 0x%04X\n", addr);
+				printf("Write to unsupported location: 0x%04X\n", addr);
 				exit(1);
 			}
 		})
@@ -51,7 +51,8 @@ uint8_t NES::read(uint16_t addr)
 		return read_prg_rom(addr);
 	} else {
 		printf("Read to unsupported location: 0x%04X\n", addr);
-		exit(1);
+		return 0;
+		// exit(1);
 	}
 }
 
@@ -74,6 +75,7 @@ void NES::write(uint16_t addr, uint8_t data)
 	}
 	// ppu
 	else if (addr < 0x4000) {
+		// printf("[0x%04X] = 0x%02X\n", addr, data);
 		ppu.write(addr, data);
 	}
 	// prg rom space
@@ -82,7 +84,7 @@ void NES::write(uint16_t addr, uint8_t data)
 		exit(1);
 	} else {
 		printf("Write to unsupported location: 0x%04X\n", addr);
-		exit(1);
+		// exit(1);
 	}
 }
 

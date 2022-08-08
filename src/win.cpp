@@ -34,21 +34,16 @@ void Window::set_px(int x, int y, uint32_t rgb) {
 }
 
 void Window::render()  {
-	bool run = true;
-	
-	while (run) {
-		SDL_RenderClear(renderer);
-		SDL_UpdateTexture(tex, nullptr, pixels, width * 4);
-		SDL_RenderCopy(renderer, tex, nullptr, nullptr);
-		SDL_RenderPresent(renderer);
+	SDL_RenderClear(renderer);
+	SDL_UpdateTexture(tex, nullptr, pixels, width * 4);
+	SDL_RenderCopy(renderer, tex, nullptr, nullptr);
+	SDL_RenderPresent(renderer);
 
-		SDL_Event e;
-		while (SDL_PollEvent(&e)) {
-			switch (e.type) {
-				case SDL_QUIT:
-					run = false;
-					break;
-			}
+	SDL_Event e;
+	while (SDL_PollEvent(&e)) {
+		switch (e.type) {
+			case SDL_QUIT:
+				exit(0);
 		}
 	}
 }

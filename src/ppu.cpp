@@ -3,11 +3,7 @@
 #include <nes.hpp>
 
 PPU::PPU(NES *nes, Mirroring mirroring, bus_read_t internal_read, bus_write_t internal_write)
-	: nes(nes), win(256, 240), mirroring(mirroring), internal_read(internal_read), internal_write(internal_write)
-{
-	
-	
-}
+	: nes(nes), win(256, 240), mirroring(mirroring), internal_read(internal_read), internal_write(internal_write) {}
 
 uint16_t PPU::mirror_nametable_addr(uint16_t addr) {
 	if (mirroring == Mirroring::FOUR_SCREEN) {
@@ -65,6 +61,9 @@ void PPU::write(uint16_t addr, uint8_t data) {
 			ctrl.set(data);
 
 			if (!gen_nmi_prev && ctrl.gen_nmi && status.in_vblank) {
+				render();
+				win.render();
+
 				nes->cpu.nmi();
 			}
 		}
@@ -114,6 +113,7 @@ void PPU::step() {
 			status.in_vblank = true;
 
 			render();
+			win.render();
 
 			nes->cpu.nmi();	
 		} else if (scanline >= 262) {
@@ -133,10 +133,13 @@ void PPU::render() {
 
 			
 			for (int py = 0; py < 8; py++) {
+				uint8_t low = internal_read(pattern_addr + py);
+				uint8_t high = internal_read(pattern_addr + py + 8);
+
 				for (int px = 0; px < 8; px++) {
 					uint8_t val = 
-						((internal_read(pattern_addr + py) >> (7 - px)) & 1) | 
-						(((internal_read(pattern_addr + py + 8) >> (7 - px)) & 1) << 1);
+						((low >> (7 - px)) & 1) | 
+						(((high >> (7 - px)) & 1) << 1);
 
 					switch (val) {
 						case 0: win.set_px(x * 8 + px, y * 8 + py, palette[0x01]); break;
