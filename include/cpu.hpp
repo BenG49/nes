@@ -54,14 +54,14 @@ public:
 		Status() {}
 	};
 
+	size_t cycles;
+
 private:
 	// stack pointer = 0x100 + sp, grows downward
 	uint8_t a, x, y, sp;
 	Status sr;
 
 	uint16_t pc;
-
-	size_t cycles;
 	
 	struct Instr {
 		op_t func;

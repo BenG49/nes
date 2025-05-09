@@ -109,14 +109,18 @@ void PPU::step() {
 		cycles -= 341;
 		scanline++;
 
-		if (scanline == 241 && ctrl.gen_nmi) {
+		if (scanline == 241) {
 			status.in_vblank = true;
 
-			render();
-			win.render();
+			if (ctrl.gen_nmi) {
+				render();
+				win.render();
 
-			nes->cpu.nmi();	
-		} else if (scanline >= 262) {
+				nes->cpu.nmi();	
+			}
+		}
+		
+		if (scanline >= 262) {
 			scanline = 0;
 			status.in_vblank = false;
 		}
@@ -128,6 +132,14 @@ void PPU::render() {
 		for (int x = 0; x < 32; x++) {
 			uint16_t nametable_addr = 0x2000 + y * 32 + x;
 			uint8_t tile = internal_read(nametable_addr);
+
+			for (int py = 0; py < 8; py++) {
+				for (int px = 0; px < 8; px++) {
+					win.set_px(x * 8 + px, y * 8 + py, tile);
+				}
+			}
+
+			continue;
 
 			uint16_t pattern_addr = 0x1000 * ctrl.bg_addr + tile * 16;
 
